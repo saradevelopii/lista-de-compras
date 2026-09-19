@@ -1,0 +1,13 @@
+{
+  "name": "sacola-lista-de-compras",
+  "version": "2.0.0",
+  "description": "PWA de lista de compras em HTML, CSS e JS puros — sem frameworks.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "serve -l 8000 ."
+  },
+  "devDependencies": {
+    "serve": "^14.2.3"
+  }
+}
