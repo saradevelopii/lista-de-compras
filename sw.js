@@ -4,7 +4,7 @@
    Troque a versão abaixo sempre que alterar algum arquivo.
    ========================================================= */
 
-var VERSAO = 'sacola-v3';
+var VERSAO = 'sacola-v4';
 
 var ARQUIVOS = [
   './',

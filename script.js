@@ -70,6 +70,7 @@ var confirmarRemocao = criarConfirmador({
 /* ---------- Máscara de moeda no campo do formulário principal ---------- */
 
 aplicarMascaraMoeda(campoPrecoEl);
+aplicarMascaraMoeda(campoOrcamentoEl);
 
 /* ---------- Ações de item ---------- */
 
@@ -164,7 +165,7 @@ function desenharPainelFinanceiro() {
 
   // Não sobrescreve o campo enquanto o usuário está digitando nele
   if (document.activeElement !== campoOrcamentoEl) {
-    campoOrcamentoEl.value = orcamento != null ? String(orcamento) : '';
+    definirValorMascarado(campoOrcamentoEl, orcamento);
   }
 }
 
@@ -232,7 +233,7 @@ formularioEl.addEventListener('submit', function (evento) {
 /* ---------- Orçamento ---------- */
 
 campoOrcamentoEl.addEventListener('change', function () {
-  loja.definirOrcamento(campoOrcamentoEl.value);
+  loja.definirOrcamento(valorNumericoMascarado(campoOrcamentoEl));
 });
 
 /* ---------- Navegação entre a tela de lista e a de corredores ---------- */
