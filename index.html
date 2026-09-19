@@ -22,7 +22,7 @@
     <header class="topo">
       <div class="topo__linha">
         <h1 class="topo__titulo">Sacola</h1>
-        <button type="button" class="topo__corredores" id="botao-corredores" aria-expanded="false" aria-controls="painel-corredores">
+        <button type="button" class="topo__corredores" id="botao-corredores" aria-expanded="false" aria-controls="tela-corredores">
           Corredores
         </button>
       </div>
@@ -50,11 +50,17 @@
         </div>
         <p class="painel-financeiro__badge" data-badge hidden></p>
       </section>
-
-      <div class="corredores" id="painel-corredores" hidden></div>
     </header>
 
-    <main class="conteudo">
+    <section class="tela-corredores" id="tela-corredores" hidden aria-labelledby="titulo-corredores">
+      <div class="tela-corredores__cabecalho">
+        <h2 id="titulo-corredores">Ordenação de Corredores</h2>
+        <p class="tela-corredores__dica">Ajuste a ordem para seguir o trajeto da sua loja — a lista de pendentes se reagrupa sozinha.</p>
+      </div>
+      <div class="corredores" id="painel-corredores"></div>
+    </section>
+
+    <main class="conteudo" id="tela-lista">
       <h2 class="oculto">Itens da lista</h2>
 
       <p class="vazio" id="vazio">
@@ -134,14 +140,22 @@
           class="barra__campo barra__campo--preco"
           id="campo-preco"
           name="preco"
-          type="number"
-          min="0"
-          step="0.01"
+          type="text"
           inputmode="decimal"
           placeholder="Preço un.">
       </div>
     </form>
 
+  </div>
+
+  <div class="dialogo" id="dialogo-remover" hidden role="alertdialog" aria-modal="true" aria-label="Confirmar remoção" aria-describedby="dialogo-mensagem">
+    <div class="dialogo__caixa">
+      <p class="dialogo__mensagem" id="dialogo-mensagem"></p>
+      <div class="dialogo__acoes">
+        <button type="button" class="dialogo__cancelar" id="dialogo-cancelar">Cancelar</button>
+        <button type="button" class="dialogo__remover" id="dialogo-remover-botao">Remover</button>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>

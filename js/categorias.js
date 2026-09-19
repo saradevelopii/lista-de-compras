@@ -18,14 +18,11 @@ export const CATEGORIAS = [
 var CHAVES_VALIDAS = CATEGORIAS.map(function (c) { return c.chave; });
 
 /**
- * Rotas de loja pré-definidas: cada uma é a lista de chaves de
- * categoria na ordem física dos corredores. O índice do array
- * É o index_corredor — trocar de preset reordena tudo de uma vez.
+ * Ordem física padrão dos corredores — ponto de partida para
+ * a "Ordenação de Corredores"; o usuário pode reorganizar
+ * livremente a partir daqui.
  */
-export var LAYOUTS_PRESET = {
-  padrao: ['hortifruti', 'padaria', 'laticinios', 'carnes', 'mercearia', 'bebidas', 'limpeza', 'higiene', 'outros'],
-  expresso: ['mercearia', 'bebidas', 'laticinios', 'hortifruti', 'padaria', 'carnes', 'limpeza', 'higiene', 'outros']
-};
+export var ORDEM_PADRAO = ['hortifruti', 'padaria', 'laticinios', 'carnes', 'mercearia', 'bebidas', 'limpeza', 'higiene', 'outros'];
 
 export function nomeCategoria(chave) {
   for (var i = 0; i < CATEGORIAS.length; i++) {
@@ -42,11 +39,11 @@ export function nomeCategoria(chave) {
  * @returns {string[]}
  */
 export function sanearLayout(chaves) {
-  if (!Array.isArray(chaves)) return LAYOUTS_PRESET.padrao.slice();
+  if (!Array.isArray(chaves)) return ORDEM_PADRAO.slice();
   var validas = chaves.filter(function (c) { return CHAVES_VALIDAS.indexOf(c) !== -1; });
   var faltantes = CHAVES_VALIDAS.filter(function (c) { return validas.indexOf(c) === -1; });
   var completo = validas.concat(faltantes);
-  return completo.length === CHAVES_VALIDAS.length ? completo : LAYOUTS_PRESET.padrao.slice();
+  return completo.length === CHAVES_VALIDAS.length ? completo : ORDEM_PADRAO.slice();
 }
 
 /**

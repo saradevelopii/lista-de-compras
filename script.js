@@ -8,8 +8,9 @@
    ========================================================= */
 
 import { loja } from './js/loja.js';
-import { CATEGORIAS, nomeCategoria, LAYOUTS_PRESET } from './js/categorias.js';
 import { totalCarrinho, statusOrcamento, saldoRestante } from './js/calculo.js';
+import { aplicarMascaraMoeda, valorNumericoMascarado, definirValorMascarado } from './js/mascara.js';
+import { criarConfirmador } from './js/dialogo.js';
 import {
   criarLinhaItem,
   criarCabecalhoGrupo,
@@ -18,6 +19,9 @@ import {
 } from './js/render.js';
 
 /* ---------- Referências de DOM ---------- */
+
+var telaListaEl = document.getElementById('tela-lista');
+var telaCorredoresEl = document.getElementById('tela-corredores');
 
 var listaEl = document.getElementById('lista');
 var listaConcluidosEl = document.getElementById('lista-concluidos');
@@ -51,19 +55,44 @@ var toastDesfazerEl = document.getElementById('toast-desfazer');
 
 var itemEmEdicaoId = null;
 var concluidosExpandido = false;
-var corredoresAberto = false;
+var telaAtual = 'lista'; // 'lista' | 'corredores'
 var temporizadorToastErro = null;
+
+/* ---------- Diálogo de confirmação de remoção ---------- */
+
+var confirmarRemocao = criarConfirmador({
+  overlay: document.getElementById('dialogo-remover'),
+  mensagem: document.getElementById('dialogo-mensagem'),
+  botaoCancelar: document.getElementById('dialogo-cancelar'),
+  botaoConfirmar: document.getElementById('dialogo-remover-botao')
+});
+
+/* ---------- Máscara de moeda no campo do formulário principal ---------- */
+
+aplicarMascaraMoeda(campoPrecoEl);
 
 /* ---------- Ações de item ---------- */
 
 var acoesItem = {
   aoAlternar: function (id) { loja.alternarItem(id); },
-  aoExcluir: function (id) { loja.excluirItem(id); },
+
+  aoExcluir: function (id, nome) {
+    confirmarRemocao('Tem certeza que deseja remover “' + nome + '” da lista?', 'Remover').then(function (confirmado) {
+      if (confirmado) loja.excluirItem(id);
+    });
+  },
+
   aoIniciarEdicao: function (id) { itemEmEdicaoId = id; desenhar(); },
   aoCancelarEdicao: function () { itemEmEdicaoId = null; desenhar(); },
+
+  // Fecha a edição ANTES de acionar o store: a notificação do store
+  // dispara desenhar() de forma síncrona, então itemEmEdicaoId já
+  // precisa refletir "nenhum item em edição" nesse momento — senão
+  // a linha é redesenhada ainda em modo edição e só o clique
+  // seguinte fecha de fato (esse era o bug do clique duplo).
   aoSalvarEdicao: function (id, alteracoes) {
-    loja.editarItem(id, alteracoes);
     itemEmEdicaoId = null;
+    loja.editarItem(id, alteracoes);
   }
 };
 
@@ -72,7 +101,7 @@ var acoesItem = {
 function desenhar() {
   desenharListas();
   desenharPainelFinanceiro();
-  if (corredoresAberto) desenharPainelCorredores();
+  if (telaAtual === 'corredores') desenharPainelCorredores();
 }
 
 function desenharListas() {
@@ -142,8 +171,6 @@ function desenharPainelFinanceiro() {
 function desenharPainelCorredores() {
   var config = loja.obterEstado().config;
   renderPainelCorredores(painelCorredoresEl, config.layoutAtual, {
-    presetAtivo: config.layoutPreset,
-    aoAplicarPreset: function (nome) { loja.aplicarPresetLayout(nome, LAYOUTS_PRESET); },
     aoMover: function (indice, direcao) {
       var atual = loja.obterEstado().config.layoutAtual;
       var nova = atual.slice();
@@ -191,12 +218,12 @@ formularioEl.addEventListener('submit', function (evento) {
     quantidade: campoQuantidadeEl.value,
     unidade: campoUnidadeEl.value,
     categoriaChave: campoCategoriaEl.value,
-    precoUnitario: campoPrecoEl.value
+    precoUnitario: valorNumericoMascarado(campoPrecoEl)
   });
 
   campoNomeEl.value = '';
   campoQuantidadeEl.value = '';
-  campoPrecoEl.value = '';
+  definirValorMascarado(campoPrecoEl, null);
   campoUnidadeEl.value = 'un';
   // categoria permanece — comum adicionar vários itens do mesmo corredor seguidos
   campoNomeEl.focus();
@@ -208,13 +235,29 @@ campoOrcamentoEl.addEventListener('change', function () {
   loja.definirOrcamento(campoOrcamentoEl.value);
 });
 
-/* ---------- Painel de corredores ---------- */
+/* ---------- Navegação entre a tela de lista e a de corredores ---------- */
+
+function irParaCorredores() {
+  telaAtual = 'corredores';
+  telaCorredoresEl.hidden = false;
+  telaListaEl.hidden = true;
+  formularioEl.hidden = true;
+  botaoCorredoresEl.textContent = 'Voltar para lista';
+  botaoCorredoresEl.setAttribute('aria-expanded', 'true');
+  desenharPainelCorredores();
+}
+
+function irParaLista() {
+  telaAtual = 'lista';
+  telaCorredoresEl.hidden = true;
+  telaListaEl.hidden = false;
+  formularioEl.hidden = false;
+  botaoCorredoresEl.textContent = 'Corredores';
+  botaoCorredoresEl.setAttribute('aria-expanded', 'false');
+}
 
 botaoCorredoresEl.addEventListener('click', function () {
-  corredoresAberto = !corredoresAberto;
-  botaoCorredoresEl.setAttribute('aria-expanded', String(corredoresAberto));
-  painelCorredoresEl.hidden = !corredoresAberto;
-  if (corredoresAberto) desenharPainelCorredores();
+  if (telaAtual === 'lista') irParaCorredores(); else irParaLista();
 });
 
 /* ---------- Acordeão de concluídos ---------- */

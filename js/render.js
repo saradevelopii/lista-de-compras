@@ -8,6 +8,7 @@
 import { CATEGORIAS, nomeCategoria } from './categorias.js';
 import { UNIDADES } from './modelos.js';
 import { totalItem, formatarMoeda, formatarQuantidade } from './calculo.js';
+import { aplicarMascaraMoeda, definirValorMascarado, valorNumericoMascarado } from './mascara.js';
 
 /**
  * Linha de item da lista — em modo leitura ou em modo edição.
@@ -65,7 +66,7 @@ export function criarLinhaItem(item, acoes) {
   excluir.className = 'item__excluir';
   excluir.textContent = '×';
   excluir.setAttribute('aria-label', 'Excluir ' + item.nome);
-  excluir.addEventListener('click', function () { acoes.aoExcluir(item.id); });
+  excluir.addEventListener('click', function () { acoes.aoExcluir(item.id, item.nome); });
 
   li.appendChild(marcar);
   li.appendChild(corpo);
@@ -93,6 +94,13 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
   var form = document.createElement('form');
   form.className = 'item__edicao';
 
+  var titulo = document.createElement('p');
+  titulo.className = 'item__edicao-titulo';
+  titulo.appendChild(document.createTextNode('Editando: '));
+  var nomeForte = document.createElement('strong');
+  nomeForte.textContent = item.nome;
+  titulo.appendChild(nomeForte);
+
   var campoQtd = document.createElement('input');
   campoQtd.type = 'number';
   campoQtd.min = '0.01';
@@ -105,13 +113,13 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
   var campoCategoria = criarCampoSelect('Categoria', CATEGORIAS, item.categoriaChave, true);
 
   var campoPreco = document.createElement('input');
-  campoPreco.type = 'number';
-  campoPreco.min = '0';
-  campoPreco.step = '0.01';
+  campoPreco.type = 'text';
+  campoPreco.inputMode = 'decimal';
   campoPreco.placeholder = 'Preço por unidade';
-  campoPreco.value = item.precoUnitario != null ? String(item.precoUnitario) : '';
   campoPreco.className = 'item__edicao-campo item__edicao-campo--numero';
   campoPreco.setAttribute('aria-label', 'Preço unitário estimado ou real');
+  aplicarMascaraMoeda(campoPreco);
+  definirValorMascarado(campoPreco, item.precoUnitario);
 
   var linha1 = document.createElement('div');
   linha1.className = 'item__edicao-linha';
@@ -140,6 +148,7 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
   acoesEl.appendChild(salvar);
   acoesEl.appendChild(cancelar);
 
+  form.appendChild(titulo);
   form.appendChild(linha1);
   form.appendChild(linha2);
   form.appendChild(acoesEl);
@@ -150,7 +159,7 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
       quantidade: campoQtd.value,
       unidade: campoUnidade.value,
       categoriaChave: campoCategoria.value,
-      precoUnitario: campoPreco.value
+      precoUnitario: valorNumericoMascarado(campoPreco)
     });
   });
 
@@ -196,26 +205,13 @@ export function renderPainelFinanceiro(el, dados) {
 }
 
 /**
- * Redesenha o painel de rotas/corredores (presets + reordenação manual).
+ * Redesenha a lista reordenável de corredores (Ordenação de Corredores).
  * @param {HTMLElement} el
  * @param {string[]} layoutAtual
- * @param {{aoMover: (indice: number, direcao: number) => void, aoAplicarPreset: (nome: string) => void, presetAtivo: string}} acoes
+ * @param {{aoMover: (indice: number, direcao: number) => void}} acoes
  */
 export function renderPainelCorredores(el, layoutAtual, acoes) {
   el.textContent = '';
-
-  var presets = document.createElement('div');
-  presets.className = 'corredores__presets';
-
-  [['padrao', 'Layout padrão'], ['expresso', 'Layout expresso']].forEach(function (par) {
-    var botao = document.createElement('button');
-    botao.type = 'button';
-    botao.className = 'corredores__preset' + (acoes.presetAtivo === par[0] ? ' corredores__preset--ativo' : '');
-    botao.textContent = par[1];
-    botao.addEventListener('click', function () { acoes.aoAplicarPreset(par[0]); });
-    presets.appendChild(botao);
-  });
-  el.appendChild(presets);
 
   var lista = document.createElement('ol');
   lista.className = 'corredores__lista';

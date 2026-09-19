@@ -173,18 +173,9 @@ function criarLoja() {
       persistirConfigOuReverter(antes);
     },
 
-    aplicarPresetLayout: function (nomePreset, layoutsPreset) {
-      var chaves = layoutsPreset[nomePreset];
-      if (!chaves) return;
-      var antes = config;
-      config = Object.assign({}, config, { layoutAtual: chaves.slice(), layoutPreset: nomePreset });
-      notificar({ tipo: 'config' });
-      persistirConfigOuReverter(antes);
-    },
-
     reordenarLayout: function (novaOrdem) {
       var antes = config;
-      config = Object.assign({}, config, { layoutAtual: sanearLayout(novaOrdem), layoutPreset: 'personalizado' });
+      config = Object.assign({}, config, { layoutAtual: sanearLayout(novaOrdem) });
       notificar({ tipo: 'config' });
       persistirConfigOuReverter(antes);
     }

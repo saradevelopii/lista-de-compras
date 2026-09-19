@@ -4,7 +4,7 @@
    Troque a versão abaixo sempre que alterar algum arquivo.
    ========================================================= */
 
-var VERSAO = 'sacola-v2';
+var VERSAO = 'sacola-v3';
 
 var ARQUIVOS = [
   './',
@@ -17,6 +17,8 @@ var ARQUIVOS = [
   './js/armazenamento.js',
   './js/loja.js',
   './js/render.js',
+  './js/mascara.js',
+  './js/dialogo.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',

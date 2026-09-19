@@ -4,7 +4,7 @@
    ========================================================= */
 
 import { UNIDADES, gerarId } from './modelos.js';
-import { LAYOUTS_PRESET, sanearLayout } from './categorias.js';
+import { ORDEM_PADRAO, sanearLayout } from './categorias.js';
 
 var CHAVE_ITENS = 'sacola:itens';
 var CHAVE_CONFIG = 'sacola:config';
@@ -62,7 +62,6 @@ export function salvarItens(itens) {
 /**
  * @typedef {Object} Config
  * @property {number|null} orcamento
- * @property {'padrao'|'expresso'|'personalizado'} layoutPreset
  * @property {string[]} layoutAtual
  */
 
@@ -72,16 +71,14 @@ export function carregarConfig() {
     var bruto = localStorage.getItem(CHAVE_CONFIG);
     var dados = bruto ? JSON.parse(bruto) : {};
     var orcamento = Number(dados.orcamento);
-    var presetValido = dados.layoutPreset === 'expresso' || dados.layoutPreset === 'personalizado' ? dados.layoutPreset : 'padrao';
 
     return {
       orcamento: Number.isFinite(orcamento) && orcamento > 0 ? orcamento : null,
-      layoutPreset: presetValido,
-      layoutAtual: sanearLayout(dados.layoutAtual || LAYOUTS_PRESET[presetValido] || LAYOUTS_PRESET.padrao)
+      layoutAtual: sanearLayout(dados.layoutAtual || ORDEM_PADRAO)
     };
   } catch (erro) {
     console.warn('Não foi possível ler as configurações salvas:', erro);
-    return { orcamento: null, layoutPreset: 'padrao', layoutAtual: LAYOUTS_PRESET.padrao.slice() };
+    return { orcamento: null, layoutAtual: ORDEM_PADRAO.slice() };
   }
 }
 
