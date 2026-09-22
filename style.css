@@ -284,11 +284,16 @@ button, input, select {
   border-radius: var(--raio);
   background: var(--branco);
   font-size: 0.95rem;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
 }
 
 .corredores__item.arrastando {
   opacity: 0.55;
   box-shadow: 0 8px 20px rgba(14, 47, 96, 0.25);
+  touch-action: none;
 }
 
 .corredores__alca {
@@ -305,27 +310,6 @@ button, input, select {
   flex: 1 1 auto;
 }
 
-.corredores__controles {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.corredores__controles button {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--linha);
-  border-radius: 8px;
-  background: var(--neve);
-  color: var(--azul);
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.corredores__controles button:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
 /* ---------- Área da lista: cresce e rola ---------- */
 
 .conteudo {
@@ -335,6 +319,8 @@ button, input, select {
   padding: 0.5rem 0 1rem;
   overflow-y: auto;
 }
+
+.conteudo[hidden] { display: none; }
 
 .vazio {
   margin: auto;
@@ -382,6 +368,10 @@ button, input, select {
   padding: 0.6rem 1.25rem;
   border-bottom: 1px solid var(--linha);
   background: var(--branco);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
 }
 
 .item.arrastando {
@@ -389,6 +379,7 @@ button, input, select {
   box-shadow: 0 8px 20px rgba(14, 47, 96, 0.2);
   position: relative;
   z-index: 1;
+  touch-action: none;
 }
 
 .item-grupo-lista .item:first-child,
@@ -627,6 +618,8 @@ button, input, select {
   box-shadow: var(--sombra);
 }
 
+.barra[hidden] { display: none; }
+
 .barra__linha {
   display: flex;
   gap: 0.5rem;
@@ -730,15 +723,6 @@ button, input, select {
   font-weight: 800;
   font-size: 0.8rem;
   cursor: pointer;
-}
-
-@media (min-width: 600px) {
-  .atualizacao {
-    left: auto;
-    right: 2.5rem;
-    bottom: 6.5rem;
-    margin: 0;
-  }
 }
 
 /* ---------- Formulário de novo corredor ---------- */
@@ -1169,13 +1153,6 @@ button, input, select {
   }
 
   .barra { border-radius: 0; }
-
-  .toast {
-    left: auto;
-    right: 2.5rem;
-    bottom: 2.5rem;
-    margin: 0;
-  }
 
   .dialogo {
     align-items: center;

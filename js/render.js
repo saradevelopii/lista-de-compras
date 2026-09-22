@@ -77,10 +77,10 @@ export function criarLinhaItem(item, todasCategorias, acoes) {
   li.appendChild(excluir);
 
   if (acoes.arrastavel) {
-    var alca = document.createElement('button');
-    alca.type = 'button';
+    li.title = 'Mantenha pressionado e arraste para reordenar';
+    var alca = document.createElement('span');
     alca.className = 'item__alca';
-    alca.setAttribute('aria-label', 'Arrastar para reordenar ' + item.nome);
+    alca.setAttribute('aria-hidden', 'true');
     alca.textContent = '⠿';
     li.appendChild(alca);
   }
@@ -250,21 +250,24 @@ export function renderPainelFinanceiro(el, dados) {
 
 /**
  * Redesenha a lista reordenável de corredores (Ordenação de Corredores).
+ * A reordenação em si é ligada externamente (script.js chama
+ * tornarArrastavel no elemento .corredores__lista já montado aqui)
+ * — por isso esta função não recebe mais callbacks de mover.
  * @param {HTMLElement} el
  * @param {string[]} layoutAtual
  * @param {Categoria[]} todasCategorias
- * @param {{aoMover: (indice: number, direcao: number) => void}} acoes
  */
-export function renderPainelCorredores(el, layoutAtual, todasCategorias, acoes) {
+export function renderPainelCorredores(el, layoutAtual, todasCategorias) {
   el.textContent = '';
 
   var lista = document.createElement('ol');
   lista.className = 'corredores__lista';
 
-  layoutAtual.forEach(function (chave, indice) {
+  layoutAtual.forEach(function (chave) {
     var li = document.createElement('li');
     li.className = 'corredores__item';
     li.dataset.id = chave;
+    li.title = 'Mantenha pressionado e arraste para reordenar';
 
     var alca = document.createElement('span');
     alca.className = 'corredores__alca';
@@ -275,28 +278,8 @@ export function renderPainelCorredores(el, layoutAtual, todasCategorias, acoes) 
     nomeEl.className = 'corredores__nome';
     nomeEl.textContent = nomeCategoria(chave, todasCategorias);
 
-    var controles = document.createElement('div');
-    controles.className = 'corredores__controles';
-
-    var cima = document.createElement('button');
-    cima.type = 'button';
-    cima.textContent = '↑';
-    cima.disabled = indice === 0;
-    cima.setAttribute('aria-label', 'Mover ' + nomeCategoria(chave, todasCategorias) + ' para cima na rota');
-    cima.addEventListener('click', function () { acoes.aoMover(indice, -1); });
-
-    var baixo = document.createElement('button');
-    baixo.type = 'button';
-    baixo.textContent = '↓';
-    baixo.disabled = indice === layoutAtual.length - 1;
-    baixo.setAttribute('aria-label', 'Mover ' + nomeCategoria(chave, todasCategorias) + ' para baixo na rota');
-    baixo.addEventListener('click', function () { acoes.aoMover(indice, 1); });
-
-    controles.appendChild(cima);
-    controles.appendChild(baixo);
     li.appendChild(alca);
     li.appendChild(nomeEl);
-    li.appendChild(controles);
     lista.appendChild(li);
   });
 

@@ -52,7 +52,7 @@ Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 - **Concluídos**: itens marcados vão para uma seção expansível no rodapé, tachados e com opacidade reduzida. "Limpar concluídos" remove todos de uma vez, com "DESFAZER" por 5 segundos.
 - **Confirmação antes de remover**: excluir um item (ou uma lista inteira) pede confirmação antes de apagar de vez.
 - **Menu institucional** (ícone "⋮"): Sobre, Licença e Suporte.
-- **Reordenar arrastando (drag and drop)**: produtos dentro de um mesmo corredor, e a sequência inteira de corredores, podem ser reordenados arrastando pela alça "⠿" — funciona com o dedo no celular e com o mouse no computador (Pointer Events, não a API antiga de drag-and-drop do HTML).
+- **Reordenar arrastando (long-press)**: mantenha o dedo (ou o clique) parado sobre um produto ou corredor por cerca de meio segundo para "pegá-lo" e arrastar até a posição desejada — Pointer Events, funciona igual no celular e no computador. Não existem mais botões de subir/descer; um toque rápido continua marcando/abrindo o item normalmente.
 - **Compartilhar (botão único)**: um só botão "Compartilhar" abre um menu com três opções — texto formatado (WhatsApp/e-mail/clipboard), link editável pelo WhatsApp, ou copiar o link.
 - **Atualização automática do PWA**: o app verifica sozinho se há uma versão nova (a cada reabertura e periodicamente enquanto fica aberto). Quando encontra, mostra um banner discreto flutuante no rodapé — "Nova versão disponível!" com o botão "Atualizar Agora", que aplica a atualização e recarrega instantaneamente, sem precisar desinstalar nada.
 
@@ -116,10 +116,10 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `sacola-v8`; na próxima mudança, use `sacola-v9`):
+Troque a versão no topo do `sw.js` (já está em `sacola-v15`; na próxima mudança, use `sacola-v16`):
 
 ```js
-var VERSAO = 'sacola-v9';
+var VERSAO = 'sacola-v16';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.

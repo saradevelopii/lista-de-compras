@@ -351,7 +351,19 @@ function criarLoja() {
         return;
       }
       notificar({ tipo: 'listas' });
-      if (id === listaAtivaId) agendarPublicacaoRemota();
+
+      if (id === listaAtivaId) {
+        agendarPublicacaoRemota();
+      } else if (sincronizacaoDisponivel()) {
+        // a lista renomeada não é a que está aberta agora — os itens/config
+        // dela não estão em memória, então lemos do que já está salvo
+        // localmente pra montar a publicação sem sobrescrever nada
+        publicarLista(id, {
+          nome: nomeLimpo,
+          itens: carregarItens(id),
+          config: carregarConfig(id, chavesCategoriasValidas())
+        });
+      }
     },
 
     excluirLista: function (id) {

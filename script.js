@@ -162,7 +162,6 @@ function desenharListas() {
   // Liga o arrastar em cada sublista de corredor recém-criada.
   Array.prototype.forEach.call(listaEl.querySelectorAll('.item-grupo-lista'), function (sublista) {
     tornarArrastavel(sublista, {
-      seletorAlca: '.item__alca',
       aoSoltar: function (novaOrdemDeIds) {
         loja.reordenarItensDaCategoria(sublista.dataset.categoria, novaOrdemDeIds);
       }
@@ -213,23 +212,11 @@ function desenharPainelFinanceiro() {
 
 function desenharPainelCorredores() {
   var config = loja.obterEstado().config;
-  renderPainelCorredores(painelCorredoresEl, config.layoutAtual, loja.todasCategorias(), {
-    aoMover: function (indice, direcao) {
-      var atual = loja.obterEstado().config.layoutAtual;
-      var nova = atual.slice();
-      var alvo = indice + direcao;
-      if (alvo < 0 || alvo >= nova.length) return;
-      var temp = nova[indice];
-      nova[indice] = nova[alvo];
-      nova[alvo] = temp;
-      loja.reordenarLayout(nova);
-    }
-  });
+  renderPainelCorredores(painelCorredoresEl, config.layoutAtual, loja.todasCategorias());
 
   var listaCorredoresEl = painelCorredoresEl.querySelector('.corredores__lista');
   if (listaCorredoresEl) {
     tornarArrastavel(listaCorredoresEl, {
-      seletorAlca: '.corredores__alca',
       aoSoltar: function (novaOrdemDeIds) { loja.reordenarLayout(novaOrdemDeIds); }
     });
   }
@@ -353,6 +340,9 @@ function irParaLista() {
   telaListasEl.hidden = true;
   telaListaEl.hidden = false;
   formularioEl.hidden = false;
+  botaoCompartilharEl.hidden = false;
+  botaoCorredoresEl.textContent = 'Corredores';
+  botaoCorredoresEl.removeAttribute('aria-label');
   botaoCorredoresEl.setAttribute('aria-expanded', 'false');
 }
 
@@ -362,6 +352,9 @@ function irParaCorredores() {
   telaListasEl.hidden = true;
   telaListaEl.hidden = true;
   formularioEl.hidden = true;
+  botaoCompartilharEl.hidden = true;
+  botaoCorredoresEl.textContent = 'Voltar';
+  botaoCorredoresEl.setAttribute('aria-label', 'Voltar para a lista de compras');
   botaoCorredoresEl.setAttribute('aria-expanded', 'true');
   desenharPainelCorredores();
 }
@@ -372,11 +365,14 @@ function irParaListas() {
   telaCorredoresEl.hidden = true;
   telaListaEl.hidden = true;
   formularioEl.hidden = true;
+  botaoCompartilharEl.hidden = true;
+  botaoCorredoresEl.textContent = 'Voltar';
+  botaoCorredoresEl.setAttribute('aria-label', 'Voltar para a lista de compras');
   desenharTelaListas();
 }
 
 botaoCorredoresEl.addEventListener('click', function () {
-  if (telaAtual === 'corredores') irParaLista(); else irParaCorredores();
+  if (telaAtual === 'lista') irParaCorredores(); else irParaLista();
 });
 
 botaoListasEl.addEventListener('click', function () {
@@ -535,7 +531,7 @@ if ('serviceWorker' in navigator) {
   }
 
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').then(function (registro) {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (registro) {
       console.log('Service Worker registrado:', registro.scope);
 
       if (registro.waiting && navigator.serviceWorker.controller) {
@@ -546,7 +542,17 @@ if ('serviceWorker' in navigator) {
       // isso aqui cobre quem deixa a aba aberta por muito tempo sem
       // recarregar — assim um deploy novo no GitHub Pages é detectado
       // mesmo em uma sessão longa, sem precisar fechar o app.
+      //
+      // updateViaCache: 'none' (acima) é o que garante que essa checagem
+      // (e a automática do navegador) busquem o sw.js de verdade na rede
+      // em vez de responder com uma cópia velha do cache HTTP — o GitHub
+      // Pages fica atrás de um CDN que cacheia arquivos estáticos, e sem
+      // isso o navegador podia levar bem mais tempo pra notar um deploy novo.
       setInterval(function () { registro.update(); }, 60000);
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') registro.update();
+      });
 
       registro.addEventListener('updatefound', function () {
         var novoWorker = registro.installing;
