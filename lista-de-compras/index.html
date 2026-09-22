@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Qlista — lista de compras</title>
+  <meta name="description" content="Lista de compras com múltiplas listas, corredores, orçamento e sincronização em tempo real, que funciona sem internet.">
+
+  <meta name="theme-color" content="#1B4E9B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Qlista">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="atualizacao" id="banner-atualizacao" role="status" aria-live="polite" hidden>
+      <span class="atualizacao__texto">Nova versão disponível!</span>
+      <div class="atualizacao__acoes">
+        <button type="button" class="atualizacao__botao" id="botao-atualizar">Atualizar Agora</button>
+        <button type="button" class="atualizacao__fechar" id="botao-fechar-atualizacao" aria-label="Adiar atualização">✕</button>
+      </div>
+    </div>
+
+    <header class="topo">
+      <div class="topo__linha">
+        <button type="button" class="topo__titulo" id="botao-listas" aria-haspopup="true" aria-controls="tela-listas">
+          <span id="nome-lista-ativa">Qlista</span><span class="topo__seta">▾</span>
+        </button>
+        <button type="button" class="topo__menu" id="botao-menu" aria-haspopup="dialog" aria-controls="menu-institucional" aria-label="Sobre o app, licença e suporte">⋮</button>
+      </div>
+      <p class="topo__contagem" id="contagem" aria-live="polite">Nenhum item na sacola</p>
+
+      <section class="painel-financeiro" id="painel-financeiro" aria-live="polite">
+        <div class="painel-financeiro__linha">
+          <span class="painel-financeiro__rotulo">Total</span>
+          <strong class="painel-financeiro__valor" data-total>R$ 0,00</strong>
+        </div>
+        <div class="painel-financeiro__linha" data-linha-saldo hidden>
+          <span class="painel-financeiro__rotulo">Saldo</span>
+          <strong class="painel-financeiro__valor" data-saldo>—</strong>
+        </div>
+        <div class="painel-financeiro__linha painel-financeiro__linha--orcamento">
+          <label class="painel-financeiro__rotulo" for="campo-orcamento">Orçamento</label>
+          <input
+            class="painel-financeiro__campo"
+            id="campo-orcamento"
+            type="text"
+            inputmode="decimal"
+            placeholder="Sem limite">
+        </div>
+        <p class="painel-financeiro__badge" data-badge hidden></p>
+      </section>
+
+      <div class="topo__acoes">
+        <button type="button" class="topo__corredores" id="botao-corredores" aria-expanded="false" aria-controls="tela-corredores">
+          Corredores
+        </button>
+        <button type="button" class="topo__compartilhar" id="botao-compartilhar">
+          Compartilhar
+        </button>
+      </div>
+    </header>
+
+    <section class="tela-corredores" id="tela-corredores" hidden aria-labelledby="titulo-corredores">
+      <div class="tela-corredores__cabecalho">
+        <h2 id="titulo-corredores">Ordenação de Corredores</h2>
+        <p class="tela-corredores__dica">Ajuste a ordem para seguir o trajeto da sua loja — a lista de pendentes se reagrupa sozinha.</p>
+      </div>
+      <div class="corredores" id="painel-corredores"></div>
+
+      <form class="corredor-novo" id="form-novo-corredor">
+        <label class="oculto" for="campo-novo-corredor">Nome do novo corredor</label>
+        <input class="corredor-novo__campo" id="campo-novo-corredor" type="text" maxlength="40" placeholder="Novo corredor (ex: Açougue do Bairro)">
+        <button class="corredor-novo__botao" type="submit">+ Adicionar</button>
+      </form>
+    </section>
+
+    <section class="tela-listas" id="tela-listas" hidden aria-labelledby="titulo-listas">
+      <div class="tela-listas__cabecalho">
+        <h2 id="titulo-listas">Minhas Listas</h2>
+      </div>
+
+      <div class="listas" id="painel-listas"></div>
+
+      <form class="lista-nova" id="form-nova-lista">
+        <label class="oculto" for="campo-nova-lista">Nome da nova lista</label>
+        <input class="lista-nova__campo" id="campo-nova-lista" type="text" maxlength="60" placeholder="Nova lista (ex: Feira, Farmácia)">
+        <button class="lista-nova__botao" type="submit">+ Criar lista</button>
+      </form>
+    </section>
+
+    <main class="conteudo" id="tela-lista">
+      <h2 class="oculto">Itens da lista</h2>
+
+      <p class="vazio" id="vazio">
+        Adicione seu primeiro item. Ex: Arroz, Café, Papel-toalha…
+      </p>
+
+      <p class="vazio vazio--pendentes" id="vazio-pendentes" hidden>
+        Tudo pendente foi comprado. Confira a seção de concluídos aqui embaixo.
+      </p>
+
+      <ul class="lista" id="lista" aria-label="Itens pendentes"></ul>
+
+      <section class="concluidos" id="secao-concluidos" hidden>
+        <div class="concluidos__cabecalho">
+          <button type="button" class="concluidos__alternar" id="alternar-concluidos" aria-expanded="false" aria-controls="lista-concluidos">
+            <span id="concluidos-titulo">Concluídos</span>
+          </button>
+          <button type="button" class="concluidos__limpar" id="limpar-concluidos">Limpar concluídos</button>
+        </div>
+        <ul class="lista lista--concluidos" id="lista-concluidos" aria-label="Itens concluídos" hidden></ul>
+      </section>
+    </main>
+
+    <form class="barra" id="formulario" autocomplete="off">
+      <div class="barra__linha barra__linha--principal">
+        <div class="barra__campo-com-sugestoes">
+          <label class="oculto" for="campo-nome">Nome do item</label>
+          <input
+            class="barra__campo barra__campo--nome"
+            id="campo-nome"
+            name="nome"
+            type="text"
+            placeholder="O que falta comprar?"
+            maxlength="80"
+            enterkeyhint="next"
+            autocomplete="off"
+            required>
+          <div class="sugestoes" id="sugestoes" hidden></div>
+        </div>
+        <button class="barra__botao" type="submit">Adicionar</button>
+      </div>
+
+      <div class="barra__linha barra__linha--detalhes">
+        <label class="oculto" for="campo-quantidade">Quantidade</label>
+        <input
+          class="barra__campo barra__campo--quantidade"
+          id="campo-quantidade"
+          name="quantidade"
+          type="number"
+          min="0.01"
+          step="any"
+          inputmode="decimal"
+          placeholder="1">
+
+        <label class="oculto" for="campo-unidade">Unidade</label>
+        <select class="barra__campo barra__campo--unidade" id="campo-unidade" name="unidade">
+          <option value="un" selected>un</option>
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+          <option value="L">L</option>
+          <option value="ml">ml</option>
+          <option value="caixa">caixa</option>
+          <option value="pacote">pacote</option>
+        </select>
+
+        <label class="oculto" for="campo-categoria">Categoria</label>
+        <select class="barra__campo barra__campo--categoria" id="campo-categoria" name="categoria"></select>
+
+        <label class="oculto" for="campo-preco">Preço unitário</label>
+        <input
+          class="barra__campo barra__campo--preco"
+          id="campo-preco"
+          name="preco"
+          type="text"
+          inputmode="decimal"
+          placeholder="Preço un.">
+      </div>
+    </form>
+
+  </div>
+
+  <div class="dialogo" id="dialogo-remover" hidden role="alertdialog" aria-modal="true" aria-label="Confirmar remoção" aria-describedby="dialogo-mensagem">
+    <div class="dialogo__caixa">
+      <p class="dialogo__mensagem" id="dialogo-mensagem"></p>
+      <div class="dialogo__acoes">
+        <button type="button" class="dialogo__cancelar" id="dialogo-cancelar">Cancelar</button>
+        <button type="button" class="dialogo__remover" id="dialogo-remover-botao">Remover</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialogo" id="menu-compartilhar" hidden role="dialog" aria-modal="true" aria-label="Compartilhar lista">
+    <div class="dialogo__caixa dialogo__caixa--menu dialogo__caixa--acoes">
+      <button type="button" class="dialogo__fechar" id="fechar-menu-compartilhar" aria-label="Fechar">×</button>
+      <h2>Compartilhar</h2>
+
+      <button type="button" class="acao-compartilhar" id="opcao-compartilhar-texto">
+        <span class="acao-compartilhar__titulo">Compartilhar como texto</span>
+        <span class="acao-compartilhar__descricao">Lista pronta para colar no WhatsApp, e-mail etc.</span>
+      </button>
+
+      <div class="acao-compartilhar__grupo-titulo">Link editável (sincronizado)</div>
+
+      <button type="button" class="acao-compartilhar" id="opcao-link-whatsapp">
+        <span class="acao-compartilhar__titulo">Enviar link pelo WhatsApp</span>
+        <span class="acao-compartilhar__descricao">Quem abrir edita a mesma lista, em tempo real.</span>
+      </button>
+
+      <button type="button" class="acao-compartilhar" id="opcao-link-copiar">
+        <span class="acao-compartilhar__titulo">Copiar link</span>
+        <span class="acao-compartilhar__descricao">Cole onde quiser.</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="dialogo" id="menu-institucional" hidden role="dialog" aria-modal="true" aria-label="Sobre o app">
+    <div class="dialogo__caixa dialogo__caixa--menu">
+      <button type="button" class="dialogo__fechar" id="fechar-menu" aria-label="Fechar">×</button>
+
+      <h2 id="menu-titulo-sobre">Sobre o app</h2>
+      <p>Um app de lista de compras que funciona offline, sincroniza em tempo real entre aparelhos e organiza os itens pelo trajeto da sua loja.</p>
+      <p class="dialogo__versao">Versão <span id="menu-versao-app"></span></p>
+
+      <h3>Licença</h3>
+      <p><a href="https://opensource.org/license/mit/" target="_blank" rel="noopener">Clique aqui para obter sua licença</a></p>
+
+      <h3>Suporte</h3>
+      <p>
+        Encontrou um problema ou tem uma sugestão?
+        <a href="mailto:seu-email@exemplo.com">Envie um e-mail</a>
+        ou abra uma issue no
+        <a href="https://github.com/SEU-USUARIO/lista-de-compras" target="_blank" rel="noopener">repositório do projeto</a>.
+      </p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span class="toast__mensagem" id="toast-mensagem">Itens removidos da lista</span>
+    <button type="button" class="toast__desfazer" id="toast-desfazer" hidden>DESFAZER</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>

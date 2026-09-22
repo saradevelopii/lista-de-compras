@@ -1,0 +1,13 @@
+{
+  "name": "qlista",
+  "version": "1.0.10",
+  "description": "Qlista — PWA de lista de compras em HTML, CSS e JS puros — sem frameworks.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "serve -l 8000 ."
+  },
+  "devDependencies": {
+    "serve": "^14.2.3"
+  }
+}
