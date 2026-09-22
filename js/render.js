@@ -251,7 +251,7 @@ export function renderPainelFinanceiro(el, dados) {
 /**
  * Redesenha a lista reordenável de corredores (Ordenação de Corredores).
  * A reordenação em si é ligada externamente (script.js chama
- * tornarArrastavel no elemento .corredores__lista já montado aqui)
+ * tornarOrdenavel no elemento .corredores__lista já montado aqui)
  * — por isso esta função não recebe mais callbacks de mover.
  * @param {HTMLElement} el
  * @param {string[]} layoutAtual

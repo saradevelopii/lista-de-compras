@@ -19,6 +19,14 @@
 <body>
   <div class="app">
 
+    <div class="atualizacao" id="banner-atualizacao" role="status" aria-live="polite" hidden>
+      <span class="atualizacao__texto">Nova versão disponível!</span>
+      <div class="atualizacao__acoes">
+        <button type="button" class="atualizacao__botao" id="botao-atualizar">Atualizar Agora</button>
+        <button type="button" class="atualizacao__fechar" id="botao-fechar-atualizacao" aria-label="Adiar atualização">✕</button>
+      </div>
+    </div>
+
     <header class="topo">
       <div class="topo__linha">
         <button type="button" class="topo__titulo" id="botao-listas" aria-haspopup="true" aria-controls="tela-listas">
@@ -169,11 +177,6 @@
 
   </div>
 
-  <div class="atualizacao" id="banner-atualizacao" role="status" aria-live="polite" hidden>
-    <span>Nova versão disponível!</span>
-    <button type="button" class="atualizacao__botao" id="botao-atualizar">Atualizar Agora</button>
-  </div>
-
   <div class="dialogo" id="dialogo-remover" hidden role="alertdialog" aria-modal="true" aria-label="Confirmar remoção" aria-describedby="dialogo-mensagem">
     <div class="dialogo__caixa">
       <p class="dialogo__mensagem" id="dialogo-mensagem"></p>
@@ -233,6 +236,7 @@
     <button type="button" class="toast__desfazer" id="toast-desfazer" hidden>DESFAZER</button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script type="module" src="script.js"></script>
 </body>
 </html>

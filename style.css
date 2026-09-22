@@ -290,10 +290,12 @@ button, input, select {
   user-select: none;
 }
 
-.corredores__item.arrastando {
-  opacity: 0.55;
+.corredores__item.ordenavel__fantasma {
+  opacity: 0.4;
+}
+
+.corredores__item.ordenavel__escolhido {
   box-shadow: 0 8px 20px rgba(14, 47, 96, 0.25);
-  touch-action: none;
 }
 
 .corredores__alca {
@@ -374,12 +376,14 @@ button, input, select {
   user-select: none;
 }
 
-.item.arrastando {
-  opacity: 0.55;
+.item.ordenavel__fantasma {
+  opacity: 0.4;
+}
+
+.item.ordenavel__escolhido {
   box-shadow: 0 8px 20px rgba(14, 47, 96, 0.2);
   position: relative;
   z-index: 1;
-  touch-action: none;
 }
 
 .item-grupo-lista .item:first-child,
@@ -690,28 +694,36 @@ button, input, select {
 .barra__botao:active { transform: translateY(1px); }
 
 /* ---------- Banner de atualização disponível ---------- */
+/* Fica no fluxo normal, como primeiro filho de .app, antes do
+   cabeçalho — por isso NUNCA sobrepõe nada: ele só empurra o
+   resto do conteúdo pra baixo, como qualquer bloco novo na
+   página. Nada de position:fixed nem cálculo de altura em JS. */
 
 .atualizacao {
-  position: fixed;
-  left: 1rem;
-  right: 1rem;
-  bottom: calc(5.5rem + env(safe-area-inset-bottom));
-  z-index: 40;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.8rem;
-  max-width: 26rem;
-  margin: 0 auto;
-  padding: 0.75rem 0.75rem 0.75rem 1rem;
-  border-radius: var(--raio);
+  gap: 0.5rem 0.8rem;
+  padding: calc(0.6rem + env(safe-area-inset-top)) 1rem 0.6rem;
   background: var(--azul-fundo);
   color: var(--branco);
-  font-size: 0.88rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  font-size: 0.85rem;
 }
 
 .atualizacao[hidden] { display: none; }
+
+.atualizacao__texto {
+  flex: 1 1 auto;
+  min-width: 10rem;
+}
+
+.atualizacao__acoes {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 
 .atualizacao__botao {
   flex: 0 0 auto;
@@ -722,6 +734,19 @@ button, input, select {
   color: var(--azul-fundo);
   font-weight: 800;
   font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.atualizacao__fechar {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--branco);
+  font-size: 0.75rem;
+  line-height: 1;
   cursor: pointer;
 }
 

@@ -22,10 +22,13 @@ lista-de-compras/
 │   ├── historico.js      ← frequência de produtos (para o autocompletar)
 │   ├── compartilhar.js   ← texto formatado + Web Share API / clipboard
 │   ├── link.js           ← geração/leitura do link compartilhável
+│   ├── ordenacao.js      ← adaptador sobre o SortableJS (reordenar por arrastar)
 │   ├── firebaseSync.js   ← sincronização em tempo real (opcional)
 │   └── firebase-config.js← suas credenciais do Firebase (edite este)
 └── icons/
 ```
+
+**Dependência externa:** o `index.html` carrega o [SortableJS](https://github.com/SortableJS/Sortable) via CDN (`cdn.jsdelivr.net`), usado só pela reordenação manual (arrastar produtos/corredores). É pré-cacheado pelo Service Worker em "melhor esforço" — se o CDN estiver fora do ar bem na primeira instalação, o resto do app funciona normalmente, só a reordenação fica temporariamente indisponível até o CDN responder.
 
 ## Arquitetura
 
@@ -52,9 +55,9 @@ Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 - **Concluídos**: itens marcados vão para uma seção expansível no rodapé, tachados e com opacidade reduzida. "Limpar concluídos" remove todos de uma vez, com "DESFAZER" por 5 segundos.
 - **Confirmação antes de remover**: excluir um item (ou uma lista inteira) pede confirmação antes de apagar de vez.
 - **Menu institucional** (ícone "⋮"): Sobre, Licença e Suporte.
-- **Reordenar arrastando (long-press)**: mantenha o dedo (ou o clique) parado sobre um produto ou corredor por cerca de meio segundo para "pegá-lo" e arrastar até a posição desejada — Pointer Events, funciona igual no celular e no computador. Não existem mais botões de subir/descer; um toque rápido continua marcando/abrindo o item normalmente.
+- **Reordenar arrastando ([SortableJS](https://github.com/SortableJS/Sortable))**: no celular, segure ~200ms antes de mover (evita brigar com a rolagem da tela); no computador, clique e arraste responde na hora. Produtos usam a alça "⠿" como ponto de arraste (o resto da linha continua clicável normalmente); corredores arrastam pela linha inteira. Não existem mais botões de subir/descer. Se o CDN do SortableJS não carregar por algum motivo, o app inteiro continua funcionando normalmente — só a reordenação manual fica temporariamente indisponível.
 - **Compartilhar (botão único)**: um só botão "Compartilhar" abre um menu com três opções — texto formatado (WhatsApp/e-mail/clipboard), link editável pelo WhatsApp, ou copiar o link.
-- **Atualização automática do PWA**: o app verifica sozinho se há uma versão nova (a cada reabertura e periodicamente enquanto fica aberto). Quando encontra, mostra um banner discreto flutuante no rodapé — "Nova versão disponível!" com o botão "Atualizar Agora", que aplica a atualização e recarrega instantaneamente, sem precisar desinstalar nada.
+- **Atualização automática do PWA**: o app verifica sozinho se há uma versão nova (a cada reabertura e periodicamente enquanto fica aberto). Quando encontra, mostra uma faixa no topo — "Nova versão disponível!" — que empurra o cabeçalho pra baixo no fluxo normal da página (nunca sobrepõe o campo de adicionar produto nem qualquer outro botão). Tem o botão de destaque "Atualizar Agora" e um "✕" pra adiar sem perder o que você estava digitando.
 
 ## Configurando o Firebase (opcional, mas necessário para sincronizar)
 
@@ -116,10 +119,10 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `sacola-v15`; na próxima mudança, use `sacola-v16`):
+Troque a versão no topo do `sw.js` (já está em `sacola-v16`; na próxima mudança, use `sacola-v17`):
 
 ```js
-var VERSAO = 'sacola-v16';
+var VERSAO = 'sacola-v17';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.

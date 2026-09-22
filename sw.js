@@ -4,7 +4,7 @@
    Troque a versão abaixo sempre que alterar algum arquivo.
    ========================================================= */
 
-var VERSAO = 'sacola-v15';
+var VERSAO = 'sacola-v16';
 
 var ARQUIVOS = [
   './',
@@ -22,7 +22,7 @@ var ARQUIVOS = [
   './js/historico.js',
   './js/compartilhar.js',
   './js/link.js',
-  './js/arrastar.js',
+  './js/ordenacao.js',
   './js/firebaseSync.js',
   './js/firebase-config.js',
   './manifest.json',
@@ -30,6 +30,14 @@ var ARQUIVOS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png'
+];
+
+// Recursos de CDN externo: cacheados em "melhor esforço". Se o CDN
+// estiver fora do ar ou bloqueado no momento da instalação, isso NÃO
+// pode derrubar o pré-cache dos arquivos próprios — o app inteiro não
+// deveria depender da disponibilidade de um domínio de terceiros.
+var ARQUIVOS_EXTERNOS = [
+  'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js'
 ];
 
 // Instalação: baixa e guarda todos os arquivos, mas NÃO assume o
@@ -40,7 +48,13 @@ var ARQUIVOS = [
 self.addEventListener('install', function (evento) {
   evento.waitUntil(
     caches.open(VERSAO).then(function (cache) {
-      return cache.addAll(ARQUIVOS);
+      return cache.addAll(ARQUIVOS).then(function () {
+        return Promise.all(ARQUIVOS_EXTERNOS.map(function (url) {
+          return cache.add(url).catch(function (erro) {
+            console.warn('Não foi possível pré-cachear o recurso externo (segue sem ele por enquanto):', url, erro);
+          });
+        }));
+      });
     })
   );
 });

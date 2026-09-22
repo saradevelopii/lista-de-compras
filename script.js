@@ -20,7 +20,7 @@ import {
   renderListaDeListas,
   renderSugestoes
 } from './js/render.js';
-import { tornarArrastavel } from './js/arrastar.js';
+import { tornarOrdenavel } from './js/ordenacao.js';
 
 /* ---------- Referências de DOM ---------- */
 
@@ -159,10 +159,13 @@ function desenharListas() {
   });
   listaEl.appendChild(fragmentoPendentes);
 
-  // Liga o arrastar em cada sublista de corredor recém-criada.
+  // Liga a reordenação (SortableJS) em cada sublista de corredor recém-criada.
+  // Handle = a alça: o resto da linha (marcar, editar, excluir) continua
+  // respondendo a clique normal, sem risco de ser interpretado como arraste.
   Array.prototype.forEach.call(listaEl.querySelectorAll('.item-grupo-lista'), function (sublista) {
-    tornarArrastavel(sublista, {
-      aoSoltar: function (novaOrdemDeIds) {
+    tornarOrdenavel(sublista, {
+      handle: '.item__alca',
+      aoFinalizar: function (novaOrdemDeIds) {
         loja.reordenarItensDaCategoria(sublista.dataset.categoria, novaOrdemDeIds);
       }
     });
@@ -216,8 +219,8 @@ function desenharPainelCorredores() {
 
   var listaCorredoresEl = painelCorredoresEl.querySelector('.corredores__lista');
   if (listaCorredoresEl) {
-    tornarArrastavel(listaCorredoresEl, {
-      aoSoltar: function (novaOrdemDeIds) { loja.reordenarLayout(novaOrdemDeIds); }
+    tornarOrdenavel(listaCorredoresEl, {
+      aoFinalizar: function (novaOrdemDeIds) { loja.reordenarLayout(novaOrdemDeIds); }
     });
   }
 }
@@ -508,6 +511,15 @@ desenhar();
 
 var bannerAtualizacaoEl = document.getElementById('banner-atualizacao');
 var botaoAtualizarEl = document.getElementById('botao-atualizar');
+var botaoFecharAtualizacaoEl = document.getElementById('botao-fechar-atualizacao');
+
+botaoFecharAtualizacaoEl.addEventListener('click', function () {
+  // Só esconde — a atualização continua disponível em segundo plano.
+  // Na próxima vez que a página recarregar (do jeito que for), o
+  // navegador aplica a versão nova normalmente, mesmo sem o clique
+  // em "Atualizar Agora".
+  bannerAtualizacaoEl.hidden = true;
+});
 
 if ('serviceWorker' in navigator) {
   var atualizacaoPendente = false;
