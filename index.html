@@ -26,7 +26,7 @@
         </button>
         <button type="button" class="topo__menu" id="botao-menu" aria-haspopup="dialog" aria-controls="menu-institucional" aria-label="Sobre o app, licença e suporte">⋮</button>
       </div>
-      <p class="topo__contagem" id="contagem" aria-live="polite">Nada na sacola ainda</p>
+      <p class="topo__contagem" id="contagem" aria-live="polite">Nenhum item na sacola</p>
 
       <section class="painel-financeiro" id="painel-financeiro" aria-live="polite">
         <div class="painel-financeiro__linha">
@@ -76,7 +76,6 @@
     <section class="tela-listas" id="tela-listas" hidden aria-labelledby="titulo-listas">
       <div class="tela-listas__cabecalho">
         <h2 id="titulo-listas">Minhas Listas</h2>
-        <button type="button" class="tela-listas__link" id="botao-copiar-link">Copiar link da lista atual</button>
       </div>
 
       <div class="listas" id="painel-listas"></div>
@@ -92,7 +91,7 @@
       <h2 class="oculto">Itens da lista</h2>
 
       <p class="vazio" id="vazio">
-        Escreva o primeiro item aí embaixo — arroz, café, papel-toalha.
+        Adicione seu primeiro item. Ex: Arroz, Café, Papel-toalha…
       </p>
 
       <p class="vazio vazio--pendentes" id="vazio-pendentes" hidden>
@@ -171,8 +170,8 @@
   </div>
 
   <div class="atualizacao" id="banner-atualizacao" role="status" aria-live="polite" hidden>
-    <span>Nova versão disponível</span>
-    <button type="button" class="atualizacao__botao" id="botao-atualizar">Atualizar</button>
+    <span>Nova versão disponível!</span>
+    <button type="button" class="atualizacao__botao" id="botao-atualizar">Atualizar Agora</button>
   </div>
 
   <div class="dialogo" id="dialogo-remover" hidden role="alertdialog" aria-modal="true" aria-label="Confirmar remoção" aria-describedby="dialogo-mensagem">
@@ -185,6 +184,30 @@
     </div>
   </div>
 
+  <div class="dialogo" id="menu-compartilhar" hidden role="dialog" aria-modal="true" aria-label="Compartilhar lista">
+    <div class="dialogo__caixa dialogo__caixa--menu dialogo__caixa--acoes">
+      <button type="button" class="dialogo__fechar" id="fechar-menu-compartilhar" aria-label="Fechar">×</button>
+      <h2>Compartilhar</h2>
+
+      <button type="button" class="acao-compartilhar" id="opcao-compartilhar-texto">
+        <span class="acao-compartilhar__titulo">Compartilhar como texto</span>
+        <span class="acao-compartilhar__descricao">Lista pronta para colar no WhatsApp, e-mail etc.</span>
+      </button>
+
+      <div class="acao-compartilhar__grupo-titulo">Link editável (sincronizado)</div>
+
+      <button type="button" class="acao-compartilhar" id="opcao-link-whatsapp">
+        <span class="acao-compartilhar__titulo">Enviar link pelo WhatsApp</span>
+        <span class="acao-compartilhar__descricao">Quem abrir edita a mesma lista, em tempo real.</span>
+      </button>
+
+      <button type="button" class="acao-compartilhar" id="opcao-link-copiar">
+        <span class="acao-compartilhar__titulo">Copiar link</span>
+        <span class="acao-compartilhar__descricao">Cole onde quiser.</span>
+      </button>
+    </div>
+  </div>
+
   <div class="dialogo" id="menu-institucional" hidden role="dialog" aria-modal="true" aria-label="Sobre o Sacola">
     <div class="dialogo__caixa dialogo__caixa--menu">
       <button type="button" class="dialogo__fechar" id="fechar-menu" aria-label="Fechar">×</button>
@@ -193,7 +216,7 @@
       <p>Um app de lista de compras que funciona offline, sincroniza em tempo real entre aparelhos e organiza os itens pelo trajeto da sua loja. Versão 3.0.0.</p>
 
       <h3>Licença</h3>
-      <p>Distribuído sob a licença MIT — livre para usar, copiar, modificar e redistribuir.</p>
+      <p><a href="https://opensource.org/license/mit/" target="_blank" rel="noopener">Clique aqui para obter sua licença</a></p>
 
       <h3>Suporte</h3>
       <p>

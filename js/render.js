@@ -75,6 +75,16 @@ export function criarLinhaItem(item, todasCategorias, acoes) {
   li.appendChild(marcar);
   li.appendChild(corpo);
   li.appendChild(excluir);
+
+  if (acoes.arrastavel) {
+    var alca = document.createElement('button');
+    alca.type = 'button';
+    alca.className = 'item__alca';
+    alca.setAttribute('aria-label', 'Arrastar para reordenar ' + item.nome);
+    alca.textContent = '⠿';
+    li.appendChild(alca);
+  }
+
   return li;
 }
 
@@ -177,15 +187,37 @@ function criarFormularioEdicao(item, todasCategorias, aoSalvar, aoCancelar) {
 }
 
 /**
- * Cabeçalho de grupo dentro da lista de pendentes — uma
- * categoria/corredor, na posição definida pelo layout atual.
+ * Constrói o grupo inteiro de um corredor dentro da lista de
+ * pendentes: um cabeçalho fixo e, logo abaixo, uma sublista
+ * própria daquele corredor — é essa sublista que fica arrastável,
+ * o que naturalmente impede um item de "vazar" pra outro corredor
+ * só de arrastar (teria que reclassificar a categoria pra isso).
  * @param {string} categoriaChave
+ * @param {Item[]} itensDaCategoria
  * @param {Categoria[]} todasCategorias
+ * @param {string|null} itemEmEdicaoId - id do item em edição, se houver
+ * @param {object} acoesItem - callbacks comuns (aoAlternar, aoExcluir, ...), sem emEdicao/arrastavel
+ * @returns {HTMLLIElement}
  */
-export function criarCabecalhoGrupo(categoriaChave, todasCategorias) {
+export function criarGrupoDeItens(categoriaChave, itensDaCategoria, todasCategorias, itemEmEdicaoId, acoesItem) {
   var li = document.createElement('li');
-  li.className = 'item-grupo';
-  li.textContent = nomeCategoria(categoriaChave, todasCategorias);
+  li.className = 'item-grupo-container';
+
+  var cabecalho = document.createElement('div');
+  cabecalho.className = 'item-grupo';
+  cabecalho.textContent = nomeCategoria(categoriaChave, todasCategorias);
+  li.appendChild(cabecalho);
+
+  var sublista = document.createElement('ul');
+  sublista.className = 'item-grupo-lista';
+  sublista.dataset.categoria = categoriaChave;
+
+  itensDaCategoria.forEach(function (item) {
+    var acoesDoItem = Object.assign({ emEdicao: item.id === itemEmEdicaoId, arrastavel: true }, acoesItem);
+    sublista.appendChild(criarLinhaItem(item, todasCategorias, acoesDoItem));
+  });
+
+  li.appendChild(sublista);
   return li;
 }
 
@@ -232,8 +264,15 @@ export function renderPainelCorredores(el, layoutAtual, todasCategorias, acoes) 
   layoutAtual.forEach(function (chave, indice) {
     var li = document.createElement('li');
     li.className = 'corredores__item';
+    li.dataset.id = chave;
+
+    var alca = document.createElement('span');
+    alca.className = 'corredores__alca';
+    alca.setAttribute('aria-hidden', 'true');
+    alca.textContent = '⠿';
 
     var nomeEl = document.createElement('span');
+    nomeEl.className = 'corredores__nome';
     nomeEl.textContent = nomeCategoria(chave, todasCategorias);
 
     var controles = document.createElement('div');
@@ -255,6 +294,7 @@ export function renderPainelCorredores(el, layoutAtual, todasCategorias, acoes) 
 
     controles.appendChild(cima);
     controles.appendChild(baixo);
+    li.appendChild(alca);
     li.appendChild(nomeEl);
     li.appendChild(controles);
     lista.appendChild(li);

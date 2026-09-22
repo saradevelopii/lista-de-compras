@@ -14,12 +14,13 @@ import { formatarTextoLista, compartilharTexto } from './js/compartilhar.js';
 import { gerarLinkCompartilhavel, obterListaIdDaURL, limparListaIdDaURL } from './js/link.js';
 import {
   criarLinhaItem,
-  criarCabecalhoGrupo,
+  criarGrupoDeItens,
   renderPainelFinanceiro,
   renderPainelCorredores,
   renderListaDeListas,
   renderSugestoes
 } from './js/render.js';
+import { tornarArrastavel } from './js/arrastar.js';
 
 /* ---------- Referências de DOM ---------- */
 
@@ -51,13 +52,17 @@ var nomeListaAtivaEl = document.getElementById('nome-lista-ativa');
 var painelListasEl = document.getElementById('painel-listas');
 var formNovaListaEl = document.getElementById('form-nova-lista');
 var campoNovaListaEl = document.getElementById('campo-nova-lista');
-var botaoCopiarLinkEl = document.getElementById('botao-copiar-link');
 
 var botaoMenuEl = document.getElementById('botao-menu');
 var menuInstitucionalEl = document.getElementById('menu-institucional');
 var botaoFecharMenuEl = document.getElementById('fechar-menu');
 
 var botaoCompartilharEl = document.getElementById('botao-compartilhar');
+var menuCompartilharEl = document.getElementById('menu-compartilhar');
+var botaoFecharMenuCompartilharEl = document.getElementById('fechar-menu-compartilhar');
+var opcaoCompartilharTextoEl = document.getElementById('opcao-compartilhar-texto');
+var opcaoLinkWhatsappEl = document.getElementById('opcao-link-whatsapp');
+var opcaoLinkCopiarEl = document.getElementById('opcao-link-copiar');
 
 var formularioEl = document.getElementById('formulario');
 var campoNomeEl = document.getElementById('campo-nome');
@@ -134,18 +139,35 @@ function desenharListas() {
   var pendentes = loja.itensPendentesOrdenados();
   var concluidos = loja.itensConcluidos();
 
-  listaEl.textContent = '';
-  var categoriaAnterior = null;
-  var fragmentoPendentes = document.createDocumentFragment();
-
+  // Agrupa os pendentes (já ordenados por corredor) em blocos
+  // contíguos por categoria — cada bloco vira sua própria sublista
+  // arrastável, sem misturar itens de corredores diferentes.
+  var grupos = [];
   pendentes.forEach(function (item) {
-    if (item.categoriaChave !== categoriaAnterior) {
-      fragmentoPendentes.appendChild(criarCabecalhoGrupo(item.categoriaChave, todasCategorias));
-      categoriaAnterior = item.categoriaChave;
+    var ultimoGrupo = grupos[grupos.length - 1];
+    if (!ultimoGrupo || ultimoGrupo.categoriaChave !== item.categoriaChave) {
+      grupos.push({ categoriaChave: item.categoriaChave, itens: [item] });
+    } else {
+      ultimoGrupo.itens.push(item);
     }
-    fragmentoPendentes.appendChild(criarLinhaItem(item, todasCategorias, Object.assign({ emEdicao: item.id === itemEmEdicaoId }, acoesItem)));
+  });
+
+  listaEl.textContent = '';
+  var fragmentoPendentes = document.createDocumentFragment();
+  grupos.forEach(function (grupo) {
+    fragmentoPendentes.appendChild(criarGrupoDeItens(grupo.categoriaChave, grupo.itens, todasCategorias, itemEmEdicaoId, acoesItem));
   });
   listaEl.appendChild(fragmentoPendentes);
+
+  // Liga o arrastar em cada sublista de corredor recém-criada.
+  Array.prototype.forEach.call(listaEl.querySelectorAll('.item-grupo-lista'), function (sublista) {
+    tornarArrastavel(sublista, {
+      seletorAlca: '.item__alca',
+      aoSoltar: function (novaOrdemDeIds) {
+        loja.reordenarItensDaCategoria(sublista.dataset.categoria, novaOrdemDeIds);
+      }
+    });
+  });
 
   secaoConcluidosEl.hidden = concluidos.length === 0;
   concluidosTituloEl.textContent = 'Concluídos (' + concluidos.length + ')';
@@ -164,7 +186,7 @@ function desenharListas() {
   vazioPendentesEl.hidden = !(total > 0 && pendentes.length === 0);
 
   if (total === 0) {
-    contagemEl.textContent = 'Nada na sacola ainda';
+    contagemEl.textContent = 'Nenhum item na sacola';
   } else if (pendentes.length === 0) {
     contagemEl.textContent = 'Tudo comprado — ' + total + (total === 1 ? ' item' : ' itens');
   } else {
@@ -203,6 +225,14 @@ function desenharPainelCorredores() {
       loja.reordenarLayout(nova);
     }
   });
+
+  var listaCorredoresEl = painelCorredoresEl.querySelector('.corredores__lista');
+  if (listaCorredoresEl) {
+    tornarArrastavel(listaCorredoresEl, {
+      seletorAlca: '.corredores__alca',
+      aoSoltar: function (novaOrdemDeIds) { loja.reordenarLayout(novaOrdemDeIds); }
+    });
+  }
 }
 
 function desenharTelaListas() {
@@ -369,28 +399,24 @@ formNovoCorredorEl.addEventListener('submit', function (evento) {
 formNovaListaEl.addEventListener('submit', function (evento) {
   evento.preventDefault();
   var id = loja.criarLista(campoNovaListaEl.value);
-  if (id) {
-    campoNovaListaEl.value = '';
-    irParaLista();
-  }
+  // Fica em "Minhas Listas" depois de criar — entrar numa lista pra
+  // adicionar produto é uma ação separada e deliberada (tocar nela).
+  if (id) campoNovaListaEl.value = '';
 });
 
-botaoCopiarLinkEl.addEventListener('click', function () {
-  var link = gerarLinkCompartilhavel(loja.obterEstado().listaAtivaId);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(link).then(function () {
-      mostrarToastInfo('Link copiado! Envie para quem vai editar junto com você.');
-    }, function () {
-      mostrarToastErro('Não foi possível copiar o link.');
-    });
-  } else {
-    mostrarToastErro('Cópia automática indisponível neste navegador.');
-  }
+/* ---------- Compartilhar (botão único, com menu de opções) ---------- */
+
+function abrirMenuCompartilhar() { menuCompartilharEl.hidden = false; }
+function fecharMenuCompartilhar() { menuCompartilharEl.hidden = true; }
+
+botaoCompartilharEl.addEventListener('click', abrirMenuCompartilhar);
+botaoFecharMenuCompartilharEl.addEventListener('click', fecharMenuCompartilhar);
+menuCompartilharEl.addEventListener('click', function (evento) {
+  if (evento.target === menuCompartilharEl) fecharMenuCompartilhar();
 });
 
-/* ---------- Compartilhar texto ---------- */
-
-botaoCompartilharEl.addEventListener('click', function () {
+opcaoCompartilharTextoEl.addEventListener('click', function () {
+  fecharMenuCompartilhar();
   var estado = loja.obterEstado();
   var texto = formatarTextoLista(estado.nomeListaAtiva, loja.itensPendentesOrdenados(), loja.itensConcluidos(), loja.todasCategorias());
 
@@ -398,6 +424,28 @@ botaoCompartilharEl.addEventListener('click', function () {
     if (resultado === 'copiado') mostrarToastInfo('Texto copiado! Cole no WhatsApp ou e-mail.');
     if (resultado === 'falhou') mostrarToastErro('Não foi possível compartilhar nem copiar o texto.');
   });
+});
+
+opcaoLinkWhatsappEl.addEventListener('click', function () {
+  fecharMenuCompartilhar();
+  var estado = loja.obterEstado();
+  var link = gerarLinkCompartilhavel(estado.listaAtivaId);
+  var mensagem = 'Edite comigo a lista "' + estado.nomeListaAtiva + '": ' + link;
+  window.open('https://wa.me/?text=' + encodeURIComponent(mensagem), '_blank', 'noopener');
+});
+
+opcaoLinkCopiarEl.addEventListener('click', function () {
+  fecharMenuCompartilhar();
+  var link = gerarLinkCompartilhavel(loja.obterEstado().listaAtivaId);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(function () {
+      mostrarToastInfo('Link copiado! Quem abrir edita esta lista com você, em tempo real.');
+    }, function () {
+      mostrarToastErro('Não foi possível copiar o link.');
+    });
+  } else {
+    mostrarToastErro('Cópia automática indisponível neste navegador.');
+  }
 });
 
 /* ---------- Menu institucional ---------- */
@@ -409,6 +457,7 @@ menuInstitucionalEl.addEventListener('click', function (evento) {
 });
 document.addEventListener('keydown', function (evento) {
   if (evento.key === 'Escape' && !menuInstitucionalEl.hidden) menuInstitucionalEl.hidden = true;
+  if (evento.key === 'Escape' && !menuCompartilharEl.hidden) fecharMenuCompartilhar();
 });
 
 /* ---------- Acordeão de concluídos ---------- */
@@ -473,7 +522,6 @@ if ('serviceWorker' in navigator) {
     atualizacaoPendente = true;
 
     bannerAtualizacaoEl.hidden = false;
-    document.body.style.paddingTop = bannerAtualizacaoEl.offsetHeight + 'px';
 
     botaoAtualizarEl.addEventListener('click', function () {
       botaoAtualizarEl.disabled = true;
@@ -493,6 +541,12 @@ if ('serviceWorker' in navigator) {
       if (registro.waiting && navigator.serviceWorker.controller) {
         mostrarBannerAtualizacao(registro);
       }
+
+      // O navegador já verifica sozinho a cada navegação/reabertura;
+      // isso aqui cobre quem deixa a aba aberta por muito tempo sem
+      // recarregar — assim um deploy novo no GitHub Pages é detectado
+      // mesmo em uma sessão longa, sem precisar fechar o app.
+      setInterval(function () { registro.update(); }, 60000);
 
       registro.addEventListener('updatefound', function () {
         var novoWorker = registro.installing;

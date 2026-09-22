@@ -4,7 +4,7 @@
    Troque a versão abaixo sempre que alterar algum arquivo.
    ========================================================= */
 
-var VERSAO = 'sacola-v7';
+var VERSAO = 'sacola-v8';
 
 var ARQUIVOS = [
   './',
@@ -22,6 +22,7 @@ var ARQUIVOS = [
   './js/historico.js',
   './js/compartilhar.js',
   './js/link.js',
+  './js/arrastar.js',
   './js/firebaseSync.js',
   './js/firebase-config.js',
   './manifest.json',

@@ -51,8 +51,10 @@ Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 - **Painel financeiro**: total do carrinho, orçamento (com a mesma máscara monetária do preço) e saldo restante. Alerta visual a partir de 90% do orçamento, mais forte ao ultrapassar 100%.
 - **Concluídos**: itens marcados vão para uma seção expansível no rodapé, tachados e com opacidade reduzida. "Limpar concluídos" remove todos de uma vez, com "DESFAZER" por 5 segundos.
 - **Confirmação antes de remover**: excluir um item (ou uma lista inteira) pede confirmação antes de apagar de vez.
-- **Menu institucional** (ícone "⋮"): Sobre, Licença (MIT) e Suporte.
-- **Atualização sem fechar o app**: quando uma nova versão já foi baixada, um banner "Nova versão disponível" deixa atualizar com um toque, sem desinstalar nada.
+- **Menu institucional** (ícone "⋮"): Sobre, Licença e Suporte.
+- **Reordenar arrastando (drag and drop)**: produtos dentro de um mesmo corredor, e a sequência inteira de corredores, podem ser reordenados arrastando pela alça "⠿" — funciona com o dedo no celular e com o mouse no computador (Pointer Events, não a API antiga de drag-and-drop do HTML).
+- **Compartilhar (botão único)**: um só botão "Compartilhar" abre um menu com três opções — texto formatado (WhatsApp/e-mail/clipboard), link editável pelo WhatsApp, ou copiar o link.
+- **Atualização automática do PWA**: o app verifica sozinho se há uma versão nova (a cada reabertura e periodicamente enquanto fica aberto). Quando encontra, mostra um banner discreto flutuante no rodapé — "Nova versão disponível!" com o botão "Atualizar Agora", que aplica a atualização e recarrega instantaneamente, sem precisar desinstalar nada.
 
 ## Configurando o Firebase (opcional, mas necessário para sincronizar)
 
@@ -114,10 +116,10 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `sacola-v7`; na próxima mudança, use `sacola-v8`):
+Troque a versão no topo do `sw.js` (já está em `sacola-v8`; na próxima mudança, use `sacola-v9`):
 
 ```js
-var VERSAO = 'sacola-v8';
+var VERSAO = 'sacola-v9';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.

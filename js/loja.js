@@ -257,6 +257,38 @@ function criarLoja() {
       persistirConfigOuReverter(antes);
     },
 
+    /**
+     * Aplica a nova ordem manual dos itens PENDENTES de uma mesma
+     * categoria (arrastar e soltar). Reaproveita o próprio campo
+     * criadoEm como número de ordem — não precisa de um campo novo:
+     * os itens dessa categoria recebem valores sequenciais a partir
+     * do menor criadoEm que já existia entre eles, então a ordenação
+     * por corredor (que já desempata por criadoEm) passa a refletir
+     * a posição escolhida a dedo. Itens de outras categorias, e os
+     * já concluídos, não são tocados.
+     * @param {string} categoriaChave
+     * @param {string[]} novaOrdemDeIds
+     */
+    reordenarItensDaCategoria: function (categoriaChave, novaOrdemDeIds) {
+      var antes = itens;
+      var posicao = {};
+      novaOrdemDeIds.forEach(function (id, indice) { posicao[id] = indice; });
+
+      var criadosNaCategoria = itens
+        .filter(function (i) { return i.categoriaChave === categoriaChave && !i.feito; })
+        .map(function (i) { return i.criadoEm; });
+      var baseSequencia = criadosNaCategoria.length ? Math.min.apply(null, criadosNaCategoria) : Date.now();
+
+      itens = itens.map(function (item) {
+        if (item.categoriaChave !== categoriaChave || item.feito) return item;
+        if (!posicao.hasOwnProperty(item.id)) return item;
+        return Object.assign({}, item, { criadoEm: baseSequencia + posicao[item.id] });
+      });
+
+      notificar({ tipo: 'itens' });
+      persistirItensOuReverter(antes);
+    },
+
     criarCategoriaPersonalizada: function (nome) {
       var nomeLimpo = String(nome || '').trim();
       if (!nomeLimpo) { notificar({ tipo: 'erro', mensagem: 'Informe o nome do corredor.' }); return null; }

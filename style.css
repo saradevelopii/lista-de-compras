@@ -286,6 +286,25 @@ button, input, select {
   font-size: 0.95rem;
 }
 
+.corredores__item.arrastando {
+  opacity: 0.55;
+  box-shadow: 0 8px 20px rgba(14, 47, 96, 0.25);
+}
+
+.corredores__alca {
+  flex: 0 0 auto;
+  color: var(--cinza);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  padding: 0.2rem 0.3rem;
+}
+
+.corredores__nome {
+  flex: 1 1 auto;
+}
+
 .corredores__controles {
   display: flex;
   gap: 0.35rem;
@@ -347,6 +366,13 @@ button, input, select {
   background: var(--neve);
 }
 
+/* Sublista de um corredor — é ela que fica arrastável */
+.item-grupo-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* ---------- Item ---------- */
 
 .item {
@@ -358,7 +384,17 @@ button, input, select {
   background: var(--branco);
 }
 
-.item:first-child { border-top: 1px solid var(--linha); }
+.item.arrastando {
+  opacity: 0.55;
+  box-shadow: 0 8px 20px rgba(14, 47, 96, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.item-grupo-lista .item:first-child,
+.lista--concluidos .item:first-child {
+  border-top: 1px solid var(--linha);
+}
 
 .item__marcar {
   flex: 0 0 auto;
@@ -410,6 +446,18 @@ button, input, select {
 .item__excluir:hover {
   background: rgba(209, 56, 44, 0.10);
   color: var(--vermelho);
+}
+
+.item__alca {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--cinza);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  padding: 0.3rem 0.2rem;
 }
 
 /* Item comprado: tachado + opacidade reduzida na linha inteira */
@@ -652,33 +700,45 @@ button, input, select {
 
 .atualizacao {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  left: 1rem;
+  right: 1rem;
+  bottom: calc(5.5rem + env(safe-area-inset-bottom));
   z-index: 40;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 0.8rem;
-  padding: calc(0.6rem + env(safe-area-inset-top)) 1rem 0.6rem;
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+  border-radius: var(--raio);
   background: var(--azul-fundo);
   color: var(--branco);
   font-size: 0.88rem;
-  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .atualizacao[hidden] { display: none; }
 
 .atualizacao__botao {
   flex: 0 0 auto;
-  padding: 0.35rem 0.8rem;
+  padding: 0.4rem 0.85rem;
   border: 0;
   border-radius: 999px;
   background: var(--limao);
   color: var(--azul-fundo);
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   cursor: pointer;
+}
+
+@media (min-width: 600px) {
+  .atualizacao {
+    left: auto;
+    right: 2.5rem;
+    bottom: 6.5rem;
+    margin: 0;
+  }
 }
 
 /* ---------- Formulário de novo corredor ---------- */
@@ -982,6 +1042,47 @@ button, input, select {
 }
 
 .dialogo__caixa--menu a { color: var(--azul); }
+
+.dialogo__caixa--acoes h2 {
+  margin-bottom: 1rem;
+}
+
+.acao-compartilhar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  margin-bottom: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--neve);
+  cursor: pointer;
+  text-align: left;
+}
+
+.acao-compartilhar:hover { background: var(--linha); }
+
+.acao-compartilhar__titulo {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--grafite);
+}
+
+.acao-compartilhar__descricao {
+  font-size: 0.78rem;
+  color: var(--cinza);
+}
+
+.acao-compartilhar__grupo-titulo {
+  margin: 0.9rem 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--cinza);
+}
 
 .dialogo__fechar {
   position: absolute;
