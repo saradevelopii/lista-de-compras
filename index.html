@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Sacola — lista de compras</title>
-  <meta name="description" content="Lista de compras com corredores, orçamento e cálculo de carrinho, que funciona sem internet.">
+  <meta name="description" content="Lista de compras com múltiplas listas, corredores, orçamento e sincronização em tempo real, que funciona sem internet.">
 
   <meta name="theme-color" content="#1B4E9B">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,10 +21,10 @@
 
     <header class="topo">
       <div class="topo__linha">
-        <h1 class="topo__titulo">Sacola</h1>
-        <button type="button" class="topo__corredores" id="botao-corredores" aria-expanded="false" aria-controls="tela-corredores">
-          Corredores
+        <button type="button" class="topo__titulo" id="botao-listas" aria-haspopup="true" aria-controls="tela-listas">
+          <span id="nome-lista-ativa">Sacola</span><span class="topo__seta">▾</span>
         </button>
+        <button type="button" class="topo__menu" id="botao-menu" aria-haspopup="dialog" aria-controls="menu-institucional" aria-label="Sobre o app, licença e suporte">⋮</button>
       </div>
       <p class="topo__contagem" id="contagem" aria-live="polite">Nada na sacola ainda</p>
 
@@ -48,6 +48,15 @@
         </div>
         <p class="painel-financeiro__badge" data-badge hidden></p>
       </section>
+
+      <div class="topo__acoes">
+        <button type="button" class="topo__corredores" id="botao-corredores" aria-expanded="false" aria-controls="tela-corredores">
+          Corredores
+        </button>
+        <button type="button" class="topo__compartilhar" id="botao-compartilhar">
+          Compartilhar
+        </button>
+      </div>
     </header>
 
     <section class="tela-corredores" id="tela-corredores" hidden aria-labelledby="titulo-corredores">
@@ -56,6 +65,27 @@
         <p class="tela-corredores__dica">Ajuste a ordem para seguir o trajeto da sua loja — a lista de pendentes se reagrupa sozinha.</p>
       </div>
       <div class="corredores" id="painel-corredores"></div>
+
+      <form class="corredor-novo" id="form-novo-corredor">
+        <label class="oculto" for="campo-novo-corredor">Nome do novo corredor</label>
+        <input class="corredor-novo__campo" id="campo-novo-corredor" type="text" maxlength="40" placeholder="Novo corredor (ex: Açougue do Bairro)">
+        <button class="corredor-novo__botao" type="submit">+ Adicionar</button>
+      </form>
+    </section>
+
+    <section class="tela-listas" id="tela-listas" hidden aria-labelledby="titulo-listas">
+      <div class="tela-listas__cabecalho">
+        <h2 id="titulo-listas">Minhas Listas</h2>
+        <button type="button" class="tela-listas__link" id="botao-copiar-link">Copiar link da lista atual</button>
+      </div>
+
+      <div class="listas" id="painel-listas"></div>
+
+      <form class="lista-nova" id="form-nova-lista">
+        <label class="oculto" for="campo-nova-lista">Nome da nova lista</label>
+        <input class="lista-nova__campo" id="campo-nova-lista" type="text" maxlength="60" placeholder="Nova lista (ex: Feira, Farmácia)">
+        <button class="lista-nova__botao" type="submit">+ Criar lista</button>
+      </form>
     </section>
 
     <main class="conteudo" id="tela-lista">
@@ -84,16 +114,20 @@
 
     <form class="barra" id="formulario" autocomplete="off">
       <div class="barra__linha barra__linha--principal">
-        <label class="oculto" for="campo-nome">Nome do item</label>
-        <input
-          class="barra__campo barra__campo--nome"
-          id="campo-nome"
-          name="nome"
-          type="text"
-          placeholder="O que falta comprar?"
-          maxlength="80"
-          enterkeyhint="next"
-          required>
+        <div class="barra__campo-com-sugestoes">
+          <label class="oculto" for="campo-nome">Nome do item</label>
+          <input
+            class="barra__campo barra__campo--nome"
+            id="campo-nome"
+            name="nome"
+            type="text"
+            placeholder="O que falta comprar?"
+            maxlength="80"
+            enterkeyhint="next"
+            autocomplete="off"
+            required>
+          <div class="sugestoes" id="sugestoes" hidden></div>
+        </div>
         <button class="barra__botao" type="submit">Adicionar</button>
       </div>
 
@@ -121,17 +155,7 @@
         </select>
 
         <label class="oculto" for="campo-categoria">Categoria</label>
-        <select class="barra__campo barra__campo--categoria" id="campo-categoria" name="categoria">
-          <option value="hortifruti">Hortifrúti</option>
-          <option value="padaria">Padaria</option>
-          <option value="laticinios">Laticínios e frios</option>
-          <option value="carnes">Carnes e peixes</option>
-          <option value="mercearia" selected>Mercearia</option>
-          <option value="bebidas">Bebidas</option>
-          <option value="limpeza">Limpeza</option>
-          <option value="higiene">Higiene e farmácia</option>
-          <option value="outros">Outros</option>
-        </select>
+        <select class="barra__campo barra__campo--categoria" id="campo-categoria" name="categoria"></select>
 
         <label class="oculto" for="campo-preco">Preço unitário</label>
         <input
@@ -146,6 +170,11 @@
 
   </div>
 
+  <div class="atualizacao" id="banner-atualizacao" role="status" aria-live="polite" hidden>
+    <span>Nova versão disponível</span>
+    <button type="button" class="atualizacao__botao" id="botao-atualizar">Atualizar</button>
+  </div>
+
   <div class="dialogo" id="dialogo-remover" hidden role="alertdialog" aria-modal="true" aria-label="Confirmar remoção" aria-describedby="dialogo-mensagem">
     <div class="dialogo__caixa">
       <p class="dialogo__mensagem" id="dialogo-mensagem"></p>
@@ -153,6 +182,26 @@
         <button type="button" class="dialogo__cancelar" id="dialogo-cancelar">Cancelar</button>
         <button type="button" class="dialogo__remover" id="dialogo-remover-botao">Remover</button>
       </div>
+    </div>
+  </div>
+
+  <div class="dialogo" id="menu-institucional" hidden role="dialog" aria-modal="true" aria-label="Sobre o Sacola">
+    <div class="dialogo__caixa dialogo__caixa--menu">
+      <button type="button" class="dialogo__fechar" id="fechar-menu" aria-label="Fechar">×</button>
+
+      <h2>Sobre o Sacola</h2>
+      <p>Um app de lista de compras que funciona offline, sincroniza em tempo real entre aparelhos e organiza os itens pelo trajeto da sua loja. Versão 3.0.0.</p>
+
+      <h3>Licença</h3>
+      <p>Distribuído sob a licença MIT — livre para usar, copiar, modificar e redistribuir.</p>
+
+      <h3>Suporte</h3>
+      <p>
+        Encontrou um problema ou tem uma sugestão?
+        <a href="mailto:seu-email@exemplo.com">Envie um e-mail</a>
+        ou abra uma issue no
+        <a href="https://github.com/SEU-USUARIO/lista-de-compras" target="_blank" rel="noopener">repositório do projeto</a>.
+      </p>
     </div>
   </div>
 

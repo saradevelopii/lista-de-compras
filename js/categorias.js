@@ -1,9 +1,11 @@
 /* =========================================================
-   Categorias e ordenação por corredor (index_corredor)
+   Categorias e ordenação por corredor (index_corredor).
+   Suporta corredores fixos (do sistema) e personalizados
+   (criados pelo usuário) combinados em uma única lista.
    ========================================================= */
 
 /** @type {Categoria[]} */
-export const CATEGORIAS = [
+export var CATEGORIAS_FIXAS = [
   { chave: 'hortifruti', nome: 'Hortifrúti' },
   { chave: 'padaria', nome: 'Padaria' },
   { chave: 'laticinios', nome: 'Laticínios e frios' },
@@ -15,41 +17,59 @@ export const CATEGORIAS = [
   { chave: 'outros', nome: 'Outros' }
 ];
 
-var CHAVES_VALIDAS = CATEGORIAS.map(function (c) { return c.chave; });
+/** Ordem física padrão — derivada da própria lista fixa, sem duplicar dados. */
+export var ORDEM_PADRAO = CATEGORIAS_FIXAS.map(function (c) { return c.chave; });
 
 /**
- * Ordem física padrão dos corredores — ponto de partida para
- * a "Ordenação de Corredores"; o usuário pode reorganizar
- * livremente a partir daqui.
+ * @param {Categoria[]} personalizadas
+ * @returns {Categoria[]} fixas + personalizadas, nessa ordem
  */
-export var ORDEM_PADRAO = ['hortifruti', 'padaria', 'laticinios', 'carnes', 'mercearia', 'bebidas', 'limpeza', 'higiene', 'outros'];
+export function combinarCategorias(personalizadas) {
+  return CATEGORIAS_FIXAS.concat(Array.isArray(personalizadas) ? personalizadas : []);
+}
 
-export function nomeCategoria(chave) {
-  for (var i = 0; i < CATEGORIAS.length; i++) {
-    if (CATEGORIAS[i].chave === chave) return CATEGORIAS[i].nome;
+/**
+ * @param {string} chave
+ * @param {Categoria[]} [todasCategorias] - default: só as fixas
+ * @returns {string}
+ */
+export function nomeCategoria(chave, todasCategorias) {
+  var lista = todasCategorias || CATEGORIAS_FIXAS;
+  for (var i = 0; i < lista.length; i++) {
+    if (lista[i].chave === chave) return lista[i].nome;
   }
   return 'Outros';
 }
 
 /**
- * Garante que uma lista de chaves seja uma permutação válida de
- * todas as categorias conhecidas — protege contra layout salvo
- * corrompido ou de uma versão antiga do app.
- * @param {string[]} chaves
- * @returns {string[]}
+ * Deriva uma chave estável (sem acento, minúscula, com prefixo
+ * "p-" de "personalizada") a partir do nome digitado, garantindo
+ * que não colida com nenhuma chave já existente.
+ * @param {string} nome
+ * @param {string[]} chavesExistentes
+ * @returns {string}
  */
-export function sanearLayout(chaves) {
-  if (!Array.isArray(chaves)) return ORDEM_PADRAO.slice();
-  var validas = chaves.filter(function (c) { return CHAVES_VALIDAS.indexOf(c) !== -1; });
-  var faltantes = CHAVES_VALIDAS.filter(function (c) { return validas.indexOf(c) === -1; });
-  var completo = validas.concat(faltantes);
-  return completo.length === CHAVES_VALIDAS.length ? completo : ORDEM_PADRAO.slice();
+export function gerarChaveCategoria(nome, chavesExistentes) {
+  var base = 'p-' + String(nome)
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-+|-+$)/g, '');
+  if (!base || base === 'p-') base = 'p-corredor';
+
+  var chave = base;
+  var sufixo = 2;
+  while (chavesExistentes.indexOf(chave) !== -1) {
+    chave = base + '-' + sufixo;
+    sufixo++;
+  }
+  return chave;
 }
 
 /**
  * Ordena itens pela posição de sua categoria na rota de loja atual
  * (index_corredor); dentro da mesma categoria, mantém a ordem de
- * criação. Categoria desconhecida vai para o fim.
+ * criação. Categoria fora da rota atual vai para o fim.
  * @param {Item[]} itens
  * @param {string[]} ordemChaves
  * @returns {Item[]}
@@ -64,4 +84,21 @@ export function ordenarPorCorredor(itens, ordemChaves) {
     if (ia !== ib) return ia - ib;
     return a.criadoEm - b.criadoEm;
   });
+}
+
+/**
+ * Garante que uma ordem de corredores seja uma permutação exata
+ * do conjunto de chaves válidas atual (fixas + personalizadas):
+ * mantém as que já estavam na ordem salva e acrescenta ao fim
+ * qualquer chave válida que ainda não apareça nela (por exemplo,
+ * um corredor personalizado recém-criado).
+ * @param {string[]} layoutAtual
+ * @param {string[]} chavesValidas
+ * @returns {string[]}
+ */
+export function sanearLayout(layoutAtual, chavesValidas) {
+  var lista = Array.isArray(layoutAtual) ? layoutAtual : [];
+  var presentes = lista.filter(function (c) { return chavesValidas.indexOf(c) !== -1; });
+  var faltantes = chavesValidas.filter(function (c) { return presentes.indexOf(c) === -1; });
+  return presentes.concat(faltantes);
 }

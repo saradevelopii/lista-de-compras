@@ -6,19 +6,24 @@ HTML, CSS e JavaScript puros. Sem build, sem frameworks.
 lista-de-compras/
 ├── index.html
 ├── style.css
-├── script.js          ← orquestração (DOM + store)
+├── script.js            ← orquestração (DOM + store)
 ├── manifest.json
 ├── sw.js
 ├── package.json
 ├── js/
-│   ├── modelos.js      ← entidades e validação (Item, normalização)
-│   ├── categorias.js   ← categorias e ordenação por corredor
-│   ├── calculo.js      ← funções puras: total do carrinho, status de orçamento
-│   ├── armazenamento.js← única camada que toca o localStorage (com migração)
-│   ├── loja.js         ← store: estado, ações, UI otimista com rollback, undo
-│   ├── render.js       ← componentes de DOM reaproveitáveis
-│   ├── mascara.js      ← máscara monetária do campo de preço
-│   └── dialogo.js      ← diálogo de confirmação (Promise-based)
+│   ├── modelos.js        ← entidades e validação (Item, normalização)
+│   ├── categorias.js     ← categorias fixas + personalizadas, ordenação por corredor
+│   ├── calculo.js        ← funções puras: total do carrinho, status de orçamento
+│   ├── armazenamento.js  ← única camada que toca o localStorage (migração incluída)
+│   ├── loja.js           ← store: estado, ações, UI otimista com rollback, undo, sync
+│   ├── render.js         ← componentes de DOM reaproveitáveis
+│   ├── mascara.js        ← máscara monetária (preço e orçamento)
+│   ├── dialogo.js         ← diálogo de confirmação (Promise-based)
+│   ├── historico.js      ← frequência de produtos (para o autocompletar)
+│   ├── compartilhar.js   ← texto formatado + Web Share API / clipboard
+│   ├── link.js           ← geração/leitura do link compartilhável
+│   ├── firebaseSync.js   ← sincronização em tempo real (opcional)
+│   └── firebase-config.js← suas credenciais do Firebase (edite este)
 └── icons/
 ```
 
@@ -26,20 +31,70 @@ lista-de-compras/
 
 Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 
-`script.js` (DOM) → `render.js` (fábricas de elemento) → `loja.js` (estado/ações) → `armazenamento.js` (persistência) → `modelos.js` / `categorias.js` / `calculo.js` (regras puras, sem efeito colateral)
+`script.js` (DOM) → `render.js` (fábricas de elemento) → `loja.js` (estado/ações) → `armazenamento.js` (persistência) + `firebaseSync.js` (sincronização opcional) → `modelos.js` / `categorias.js` / `calculo.js` / `historico.js` (regras puras, sem efeito colateral)
 
-**UI otimista com rollback:** toda ação do usuário (adicionar, marcar, editar, limpar) atualiza a tela imediatamente e só depois tenta gravar no `localStorage`. Se a gravação falhar — por exemplo, quota excedida ou modo privado do navegador —, o estado é revertido automaticamente e um toast avisa o que aconteceu. Nunca fica algo na tela que não foi de fato salvo.
+**UI otimista com rollback:** toda ação do usuário atualiza a tela imediatamente e só depois tenta gravar no `localStorage`. Se a gravação falhar, o estado é revertido automaticamente e um toast avisa o que aconteceu.
+
+**Sincronização em tempo real:** cada lista publica seu estado completo (itens + config) no Firebase Realtime Database uns 400ms depois de cada mudança (para não disparar uma escrita a cada tecla). A estratégia de conflito é "o último a publicar vence" sobre o documento inteiro — simples e adequada para poucas pessoas editando a mesma lista; não há mesclagem campo a campo.
 
 ## Funcionalidades
 
-- **Quantidade e unidade**: campos separados no formulário (`un`, `kg`, `g`, `L`, `ml`, `caixa`, `pacote`). Se a quantidade não for informada, assume `1 un`.
-- **Ordenação de Corredores**: tela própria (botão "Corredores" no topo, que vira "Voltar para lista"), com reordenação manual por categoria — a lista de pendentes se reagrupa na hora.
-- **Painel financeiro**: total do carrinho (quantidade × preço de cada item), campo de orçamento e saldo restante, sempre visíveis no topo. Aviso visual a partir de 90% do orçamento e outro, mais forte, ao ultrapassar 100% — reaproveitando o próprio vermelho da paleta, sem cor nova.
-- **Campo de preço com máscara monetária**: digitação só com números, formatando da direita para a esquerda (`1` → `R$ 0,01`, `1000` → `R$ 10,00`) — tanto ao adicionar quanto ao editar um item.
-- **Concluídos**: itens marcados não somem — vão para uma seção expansível no rodapé, com texto tachado e opacidade reduzida. "Limpar concluídos" remove todos de uma vez.
-- **Desfazer**: ao limpar, um snackbar aparece por 5 segundos com o botão "DESFAZER", que restaura os itens exatamente na posição e no estado em que estavam.
-- **Edição inline**: toca no item para editar quantidade/unidade/categoria/preço, com o nome do produto no cabeçalho ("Editando: [nome]"); salva no primeiro clique.
-- **Confirmação antes de remover**: excluir um item abre um diálogo com o nome do produto — só apaga de fato ao confirmar.
+- **Múltiplas listas**: crie, renomeie, alterne e exclua quantas listas quiser (botão com o nome da lista, no topo). Itens, orçamento e ordenação de corredores são isolados por lista.
+- **Link compartilhável**: dentro de "Minhas Listas", o botão "Copiar link da lista atual" gera uma URL com o id da lista no hash (`#lista=...`). Quem abre esse link — com o Firebase configurado — vê e edita a mesma lista em tempo real.
+- **Sincronização em tempo real**: qualquer alteração (adicionar, editar, marcar, excluir) aparece nos outros aparelhos conectados à mesma lista, sem precisar recarregar.
+- **Fallback local**: sem Firebase configurado (ou sem internet), tudo continua funcionando normalmente, só local.
+- **Quantidade e unidade**: campos separados (`un`, `kg`, `g`, `L`, `ml`, `caixa`, `pacote`). Sem quantidade informada, assume `1 un`.
+- **Corredores personalizados**: crie corredores próprios (ex: "Açougue do Bairro") na tela de Ordenação de Corredores — ficam disponíveis na hora, no cadastro e na edição de itens.
+- **Edição completa**: toca no item para editar nome, quantidade, unidade, categoria e preço; salva no primeiro clique.
+- **Autocompletar por frequência**: ao digitar o nome de um produto, sugestões dos itens mais usados aparecem (ordenadas por frequência); escolher uma preenche nome, categoria e unidade habituais.
+- **Compartilhar como texto**: botão "Compartilhar" monta um texto formatado (🛒 nome da lista, itens por corredor) e usa a Web Share API, com cópia para a área de transferência como alternativa.
+- **Painel financeiro**: total do carrinho, orçamento (com a mesma máscara monetária do preço) e saldo restante. Alerta visual a partir de 90% do orçamento, mais forte ao ultrapassar 100%.
+- **Concluídos**: itens marcados vão para uma seção expansível no rodapé, tachados e com opacidade reduzida. "Limpar concluídos" remove todos de uma vez, com "DESFAZER" por 5 segundos.
+- **Confirmação antes de remover**: excluir um item (ou uma lista inteira) pede confirmação antes de apagar de vez.
+- **Menu institucional** (ícone "⋮"): Sobre, Licença (MIT) e Suporte.
+- **Atualização sem fechar o app**: quando uma nova versão já foi baixada, um banner "Nova versão disponível" deixa atualizar com um toque, sem desinstalar nada.
+
+## Configurando o Firebase (opcional, mas necessário para sincronizar)
+
+O app funciona 100% sem isso — é só para ligar a sincronização em tempo real e os links compartilháveis entre aparelhos.
+
+**1. Crie o Realtime Database** (o snippet de configuração padrão do Firebase não inclui isso — é um produto à parte do Analytics):
+   - No [console do Firebase](https://console.firebase.google.com/), abra seu projeto.
+   - Menu lateral → **Build** → **Realtime Database** → **Create Database**.
+   - Escolha a região (qualquer uma serve) e comece em **modo de teste** (regras abertas por 30 dias) — depois troque pelas regras abaixo, que não expiram.
+   - Copie a **URL** mostrada no topo da página de dados (algo como `https://SEU-PROJETO-default-rtdb.SUA-REGIAO.firebasedatabase.app` ou `.firebaseio.com`).
+
+**2. `js/firebase-config.js` já está preenchido** com as credenciais deste projeto (`lista-de-compras-qlista`), `databaseURL` incluso:
+
+```js
+export var FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBSh9U4ScbPAvJae1NrnDj1TYu34TB5HIM',
+  authDomain: 'lista-de-compras-qlista.firebaseapp.com',
+  databaseURL: 'https://lista-de-compras-qlista-default-rtdb.firebaseio.com',
+  projectId: 'lista-de-compras-qlista'
+};
+```
+
+**3. Configure as Regras** (Realtime Database → aba **Regras**), para o app funcionar sem exigir login:
+
+```json
+{
+  "rules": {
+    "listas": {
+      "$listaId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}
+```
+
+⚠️ **Importante saber**: essas regras deixam qualquer pessoa com o link ler e editar aquela lista — não há login. É a troca clássica de simplicidade por segurança para um app desse tipo (uma lista de compras não costuma ter dado sensível), mas não é o ideal para outros usos. Não coloque nada sensível no nome das listas ou dos itens.
+
+**4. Publique e teste**: depois de configurado, abra o app em dois aparelhos (ou duas abas), adicione um item em um e veja aparecer no outro em tempo real.
+
+✅ As credenciais já estão preenchidas — `disponivel()` (em `firebaseSync.js`) já retorna `true`. Falta só o passo 3 (Regras) para a sincronização funcionar de fato: sem regras abertas, o Firebase recusa a leitura/escrita e o app registra o aviso no console, mas continua funcionando 100% local (nada quebra).
 
 ## Rodando localmente
 
@@ -55,18 +110,22 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 1. Carregue a página uma vez.
 2. DevTools → Application → Service Workers, marque *Offline*.
-3. Recarregue: a lista, o orçamento e os corredores continuam lá.
+3. Recarregue: listas, itens, orçamento e corredores continuam lá.
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `sacola-v3`; na próxima mudança, use `sacola-v4`):
+Troque a versão no topo do `sw.js` (já está em `sacola-v7`; na próxima mudança, use `sacola-v8`):
 
 ```js
-var VERSAO = 'sacola-v4';
+var VERSAO = 'sacola-v8';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.
 
 ## Onde ficam os dados
 
-Tudo no `localStorage`, em duas chaves — `sacola:itens` e `sacola:config` (orçamento e layout de corredores) —, só no aparelho. Não há servidor nem sincronização entre dispositivos.
+**Local:** `localStorage`, chaveado por lista (`sacola:itens:<id>`, `sacola:config:<id>`), mais `sacola:listas` (metadados), `sacola:categorias-personalizadas` e `sacola:historico`. Sempre no aparelho, mesmo com o Firebase configurado — é o que garante o funcionamento offline.
+
+**Remoto (se configurado):** Firebase Realtime Database, em `listas/<id>` — nome, itens e config de cada lista, espelhando o que está salvo localmente.
+
+Quem já usava a versão anterior (lista única) é migrado automaticamente na primeira abertura desta versão — os itens e o orçamento viram a primeira lista, chamada "Minha Lista".

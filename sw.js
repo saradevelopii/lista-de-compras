@@ -4,7 +4,7 @@
    Troque a versão abaixo sempre que alterar algum arquivo.
    ========================================================= */
 
-var VERSAO = 'sacola-v4';
+var VERSAO = 'sacola-v7';
 
 var ARQUIVOS = [
   './',
@@ -19,6 +19,11 @@ var ARQUIVOS = [
   './js/render.js',
   './js/mascara.js',
   './js/dialogo.js',
+  './js/historico.js',
+  './js/compartilhar.js',
+  './js/link.js',
+  './js/firebaseSync.js',
+  './js/firebase-config.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',
@@ -26,15 +31,25 @@ var ARQUIVOS = [
   './icons/icon-512-maskable.png'
 ];
 
-// Instalação: baixa e guarda todos os arquivos
+// Instalação: baixa e guarda todos os arquivos, mas NÃO assume o
+// controle sozinho — fica em espera até o cliente pedir (ver
+// listener de 'message' abaixo), disparado pelo banner "Atualizar"
+// em script.js. Assim a pessoa nunca perde o que estava digitando
+// por uma troca de versão no meio do uso.
 self.addEventListener('install', function (evento) {
   evento.waitUntil(
     caches.open(VERSAO).then(function (cache) {
       return cache.addAll(ARQUIVOS);
-    }).then(function () {
-      return self.skipWaiting();
     })
   );
+});
+
+// Permite que a página peça para este Service Worker (em espera)
+// assumir o controle imediatamente, sem precisar fechar o app.
+self.addEventListener('message', function (evento) {
+  if (evento.data && evento.data.tipo === 'ativar-agora') {
+    self.skipWaiting();
+  }
 });
 
 // Ativação: apaga caches de versões antigas

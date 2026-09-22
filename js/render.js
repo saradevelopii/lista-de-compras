@@ -2,10 +2,13 @@
    Render — componentes reaproveitáveis (fábricas de elemento).
    Nenhuma função aqui lê ou grava no store; recebem dados e
    callbacks prontos, e devolvem nós de DOM ou atualizam nós
-   existentes. Isso é o que as torna reaproveitáveis e testáveis.
+   existentes. A lista de categorias (fixas + personalizadas)
+   é sempre recebida por parâmetro, nunca importada fixa —
+   assim um corredor criado pelo usuário aparece em todo lugar
+   imediatamente, sem exceção.
    ========================================================= */
 
-import { CATEGORIAS, nomeCategoria } from './categorias.js';
+import { nomeCategoria } from './categorias.js';
 import { UNIDADES } from './modelos.js';
 import { totalItem, formatarMoeda, formatarQuantidade } from './calculo.js';
 import { aplicarMascaraMoeda, definirValorMascarado, valorNumericoMascarado } from './mascara.js';
@@ -13,24 +16,25 @@ import { aplicarMascaraMoeda, definirValorMascarado, valorNumericoMascarado } fr
 /**
  * Linha de item da lista — em modo leitura ou em modo edição.
  * @param {Item} item
+ * @param {Categoria[]} todasCategorias
  * @param {{
  *   emEdicao: boolean,
  *   aoAlternar: (id: string) => void,
- *   aoExcluir: (id: string) => void,
+ *   aoExcluir: (id: string, nome: string) => void,
  *   aoIniciarEdicao: (id: string) => void,
  *   aoSalvarEdicao: (id: string, alteracoes: object) => void,
  *   aoCancelarEdicao: (id: string) => void
  * }} acoes
  * @returns {HTMLLIElement}
  */
-export function criarLinhaItem(item, acoes) {
+export function criarLinhaItem(item, todasCategorias, acoes) {
   var li = document.createElement('li');
   li.className = 'item' + (item.feito ? ' item--feito' : '');
   li.dataset.id = item.id;
 
   if (acoes.emEdicao) {
     li.classList.add('item--edicao');
-    li.appendChild(criarFormularioEdicao(item, acoes.aoSalvarEdicao, acoes.aoCancelarEdicao));
+    li.appendChild(criarFormularioEdicao(item, todasCategorias, acoes.aoSalvarEdicao, acoes.aoCancelarEdicao));
     return li;
   }
 
@@ -54,7 +58,7 @@ export function criarLinhaItem(item, acoes) {
 
   var detalheEl = document.createElement('span');
   detalheEl.className = 'item__detalhe';
-  var partes = [formatarQuantidade(item.quantidade) + ' ' + item.unidade, nomeCategoria(item.categoriaChave)];
+  var partes = [formatarQuantidade(item.quantidade) + ' ' + item.unidade, nomeCategoria(item.categoriaChave, todasCategorias)];
   if (item.precoUnitario != null) partes.push(formatarMoeda(totalItem(item)));
   detalheEl.textContent = partes.join(' · ');
 
@@ -90,16 +94,17 @@ function criarCampoSelect(rotulo, opcoes, valorSelecionado, formatarOpcao) {
   return select;
 }
 
-function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
+function criarFormularioEdicao(item, todasCategorias, aoSalvar, aoCancelar) {
   var form = document.createElement('form');
   form.className = 'item__edicao';
 
-  var titulo = document.createElement('p');
-  titulo.className = 'item__edicao-titulo';
-  titulo.appendChild(document.createTextNode('Editando: '));
-  var nomeForte = document.createElement('strong');
-  nomeForte.textContent = item.nome;
-  titulo.appendChild(nomeForte);
+  var campoNome = document.createElement('input');
+  campoNome.type = 'text';
+  campoNome.maxLength = 80;
+  campoNome.value = item.nome;
+  campoNome.className = 'item__edicao-campo item__edicao-campo--nome';
+  campoNome.setAttribute('aria-label', 'Nome do produto');
+  campoNome.required = true;
 
   var campoQtd = document.createElement('input');
   campoQtd.type = 'number';
@@ -110,7 +115,7 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
   campoQtd.setAttribute('aria-label', 'Quantidade');
 
   var campoUnidade = criarCampoSelect('Unidade', UNIDADES, item.unidade);
-  var campoCategoria = criarCampoSelect('Categoria', CATEGORIAS, item.categoriaChave, true);
+  var campoCategoria = criarCampoSelect('Categoria', todasCategorias, item.categoriaChave, true);
 
   var campoPreco = document.createElement('input');
   campoPreco.type = 'text';
@@ -120,6 +125,10 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
   campoPreco.setAttribute('aria-label', 'Preço unitário estimado ou real');
   aplicarMascaraMoeda(campoPreco);
   definirValorMascarado(campoPreco, item.precoUnitario);
+
+  var linha0 = document.createElement('div');
+  linha0.className = 'item__edicao-linha';
+  linha0.appendChild(campoNome);
 
   var linha1 = document.createElement('div');
   linha1.className = 'item__edicao-linha';
@@ -148,7 +157,7 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
   acoesEl.appendChild(salvar);
   acoesEl.appendChild(cancelar);
 
-  form.appendChild(titulo);
+  form.appendChild(linha0);
   form.appendChild(linha1);
   form.appendChild(linha2);
   form.appendChild(acoesEl);
@@ -156,6 +165,7 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
   form.addEventListener('submit', function (evento) {
     evento.preventDefault();
     aoSalvar(item.id, {
+      nome: campoNome.value,
       quantidade: campoQtd.value,
       unidade: campoUnidade.value,
       categoriaChave: campoCategoria.value,
@@ -169,11 +179,13 @@ function criarFormularioEdicao(item, aoSalvar, aoCancelar) {
 /**
  * Cabeçalho de grupo dentro da lista de pendentes — uma
  * categoria/corredor, na posição definida pelo layout atual.
+ * @param {string} categoriaChave
+ * @param {Categoria[]} todasCategorias
  */
-export function criarCabecalhoGrupo(categoriaChave) {
+export function criarCabecalhoGrupo(categoriaChave, todasCategorias) {
   var li = document.createElement('li');
   li.className = 'item-grupo';
-  li.textContent = nomeCategoria(categoriaChave);
+  li.textContent = nomeCategoria(categoriaChave, todasCategorias);
   return li;
 }
 
@@ -208,9 +220,10 @@ export function renderPainelFinanceiro(el, dados) {
  * Redesenha a lista reordenável de corredores (Ordenação de Corredores).
  * @param {HTMLElement} el
  * @param {string[]} layoutAtual
+ * @param {Categoria[]} todasCategorias
  * @param {{aoMover: (indice: number, direcao: number) => void}} acoes
  */
-export function renderPainelCorredores(el, layoutAtual, acoes) {
+export function renderPainelCorredores(el, layoutAtual, todasCategorias, acoes) {
   el.textContent = '';
 
   var lista = document.createElement('ol');
@@ -221,7 +234,7 @@ export function renderPainelCorredores(el, layoutAtual, acoes) {
     li.className = 'corredores__item';
 
     var nomeEl = document.createElement('span');
-    nomeEl.textContent = nomeCategoria(chave);
+    nomeEl.textContent = nomeCategoria(chave, todasCategorias);
 
     var controles = document.createElement('div');
     controles.className = 'corredores__controles';
@@ -230,14 +243,14 @@ export function renderPainelCorredores(el, layoutAtual, acoes) {
     cima.type = 'button';
     cima.textContent = '↑';
     cima.disabled = indice === 0;
-    cima.setAttribute('aria-label', 'Mover ' + nomeCategoria(chave) + ' para cima na rota');
+    cima.setAttribute('aria-label', 'Mover ' + nomeCategoria(chave, todasCategorias) + ' para cima na rota');
     cima.addEventListener('click', function () { acoes.aoMover(indice, -1); });
 
     var baixo = document.createElement('button');
     baixo.type = 'button';
     baixo.textContent = '↓';
     baixo.disabled = indice === layoutAtual.length - 1;
-    baixo.setAttribute('aria-label', 'Mover ' + nomeCategoria(chave) + ' para baixo na rota');
+    baixo.setAttribute('aria-label', 'Mover ' + nomeCategoria(chave, todasCategorias) + ' para baixo na rota');
     baixo.addEventListener('click', function () { acoes.aoMover(indice, 1); });
 
     controles.appendChild(cima);
@@ -248,4 +261,76 @@ export function renderPainelCorredores(el, layoutAtual, acoes) {
   });
 
   el.appendChild(lista);
+}
+
+/**
+ * Lista de listas (tela "Minhas Listas"): cada uma com botão de
+ * ativar, renomear e excluir.
+ * @param {HTMLElement} el
+ * @param {Array<{id:string, nome:string}>} listas
+ * @param {string} listaAtivaId
+ * @param {{aoAlternar:Function, aoRenomear:Function, aoExcluir:Function}} acoes
+ */
+export function renderListaDeListas(el, listas, listaAtivaId, acoes) {
+  el.textContent = '';
+  var ul = document.createElement('ul');
+  ul.className = 'listas__lista';
+
+  listas.forEach(function (lista) {
+    var li = document.createElement('li');
+    li.className = 'listas__item' + (lista.id === listaAtivaId ? ' listas__item--ativa' : '');
+
+    var botaoAtivar = document.createElement('button');
+    botaoAtivar.type = 'button';
+    botaoAtivar.className = 'listas__nome';
+    botaoAtivar.textContent = lista.nome;
+    if (lista.id === listaAtivaId) botaoAtivar.setAttribute('aria-current', 'true');
+    botaoAtivar.addEventListener('click', function () { acoes.aoAlternar(lista.id); });
+
+    var botaoRenomear = document.createElement('button');
+    botaoRenomear.type = 'button';
+    botaoRenomear.className = 'listas__acao';
+    botaoRenomear.textContent = 'Renomear';
+    botaoRenomear.addEventListener('click', function () { acoes.aoRenomear(lista.id, lista.nome); });
+
+    var botaoExcluir = document.createElement('button');
+    botaoExcluir.type = 'button';
+    botaoExcluir.className = 'listas__acao listas__acao--excluir';
+    botaoExcluir.textContent = 'Excluir';
+    botaoExcluir.disabled = listas.length <= 1;
+    botaoExcluir.addEventListener('click', function () { acoes.aoExcluir(lista.id, lista.nome); });
+
+    li.appendChild(botaoAtivar);
+    li.appendChild(botaoRenomear);
+    li.appendChild(botaoExcluir);
+    ul.appendChild(li);
+  });
+
+  el.appendChild(ul);
+}
+
+/**
+ * Dropdown de sugestões do autocompletar, posicionado logo
+ * abaixo do campo de nome do produto.
+ * @param {HTMLElement} el
+ * @param {Array<{nome:string, categoriaChave:string, unidade:string}>} sugestoes
+ * @param {(sugestao: object) => void} aoEscolher
+ */
+export function renderSugestoes(el, sugestoes, aoEscolher) {
+  el.textContent = '';
+  el.hidden = sugestoes.length === 0;
+  if (sugestoes.length === 0) return;
+
+  sugestoes.forEach(function (sugestao) {
+    var botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'sugestoes__item';
+    botao.textContent = sugestao.nome;
+    // usa mousedown (dispara antes do blur do campo de texto) para o clique não ser perdido
+    botao.addEventListener('mousedown', function (evento) {
+      evento.preventDefault();
+      aoEscolher(sugestao);
+    });
+    el.appendChild(botao);
+  });
 }
