@@ -1,5 +1,5 @@
 /* =========================================================
-   Sacola — orquestração da aplicação.
+   Qlista — orquestração da aplicação.
 
    Único arquivo que conhece o DOM e o store ao mesmo tempo.
    Regra de negócio vive em modelos/categorias/calculo/loja;
@@ -21,6 +21,7 @@ import {
   renderSugestoes
 } from './js/render.js';
 import { tornarOrdenavel } from './js/ordenacao.js';
+import { NOME_APP, VERSAO_APP } from './js/identidade.js';
 
 /* ---------- Referências de DOM ---------- */
 
@@ -331,7 +332,7 @@ campoNomeEl.addEventListener('blur', function () {
 
 /* ---------- Orçamento ---------- */
 
-campoOrcamentoEl.addEventListener('change', function () {
+campoOrcamentoEl.addEventListener('input', function () {
   loja.definirOrcamento(valorNumericoMascarado(campoOrcamentoEl));
 });
 
@@ -447,6 +448,13 @@ opcaoLinkCopiarEl.addEventListener('click', function () {
   }
 });
 
+/* ---------- Identidade do app (nome + versão, de fonte única) ---------- */
+
+document.title = NOME_APP + ' — lista de compras';
+document.getElementById('menu-titulo-sobre').textContent = 'Sobre o ' + NOME_APP;
+document.getElementById('menu-versao-app').textContent = VERSAO_APP;
+menuInstitucionalEl.setAttribute('aria-label', 'Sobre o ' + NOME_APP);
+
 /* ---------- Menu institucional ---------- */
 
 botaoMenuEl.addEventListener('click', function () { menuInstitucionalEl.hidden = false; });
@@ -507,82 +515,50 @@ if (listaIdDaURL) {
 desenharOpcoesCategoria();
 desenhar();
 
-/* ---------- Service Worker + atualização sem fechar o app ---------- */
+/* ---------- Service Worker + atualização 100% automática ---------- */
 
 var bannerAtualizacaoEl = document.getElementById('banner-atualizacao');
-var botaoAtualizarEl = document.getElementById('botao-atualizar');
-var botaoFecharAtualizacaoEl = document.getElementById('botao-fechar-atualizacao');
-
-botaoFecharAtualizacaoEl.addEventListener('click', function () {
-  // Só esconde — a atualização continua disponível em segundo plano.
-  // Na próxima vez que a página recarregar (do jeito que for), o
-  // navegador aplica a versão nova normalmente, mesmo sem o clique
-  // em "Atualizar Agora".
-  bannerAtualizacaoEl.hidden = true;
-});
 
 if ('serviceWorker' in navigator) {
-  var atualizacaoPendente = false;
   var recarregandoPorAtualizacao = false;
-
-  function mostrarBannerAtualizacao(registro) {
-    if (atualizacaoPendente) return;
-    atualizacaoPendente = true;
-
-    bannerAtualizacaoEl.hidden = false;
-
-    botaoAtualizarEl.addEventListener('click', function () {
-      botaoAtualizarEl.disabled = true;
-      botaoAtualizarEl.textContent = 'Atualizando…';
-      if (registro.waiting) {
-        registro.waiting.postMessage({ tipo: 'ativar-agora' });
-      } else {
-        window.location.reload();
-      }
-    });
-  }
+  // Captura ANTES do registro: se já havia um Service Worker controlando
+  // esta aba (de uma visita anterior), uma futura troca de controlador é
+  // uma atualização de verdade. Na primeira instalação, não há controlador
+  // nenhum ainda — nesse caso não precisamos recarregar nada.
+  var haviaControladorAntes = !!navigator.serviceWorker.controller;
 
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (registro) {
       console.log('Service Worker registrado:', registro.scope);
 
-      if (registro.waiting && navigator.serviceWorker.controller) {
-        mostrarBannerAtualizacao(registro);
-      }
-
-      // O navegador já verifica sozinho a cada navegação/reabertura;
-      // isso aqui cobre quem deixa a aba aberta por muito tempo sem
-      // recarregar — assim um deploy novo no GitHub Pages é detectado
-      // mesmo em uma sessão longa, sem precisar fechar o app.
-      //
-      // updateViaCache: 'none' (acima) é o que garante que essa checagem
-      // (e a automática do navegador) busquem o sw.js de verdade na rede
-      // em vez de responder com uma cópia velha do cache HTTP — o GitHub
-      // Pages fica atrás de um CDN que cacheia arquivos estáticos, e sem
-      // isso o navegador podia levar bem mais tempo pra notar um deploy novo.
-      setInterval(function () { registro.update(); }, 60000);
+      // Checagem imediata (não espera o primeiro tick do intervalo) +
+      // intervalo curto de 15s: cobre tanto quem acabou de abrir o app
+      // logo após um deploy quanto quem deixa a aba aberta por muito
+      // tempo — nos dois casos, a detecção fica na casa de segundos,
+      // não minutos. updateViaCache: 'none' (acima) garante que essa
+      // checagem busca o sw.js de verdade na rede, sem cair numa cópia
+      // velha do cache HTTP do CDN do GitHub Pages.
+      registro.update();
+      setInterval(function () { registro.update(); }, 15000);
 
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible') registro.update();
-      });
-
-      registro.addEventListener('updatefound', function () {
-        var novoWorker = registro.installing;
-        if (!novoWorker) return;
-        novoWorker.addEventListener('statechange', function () {
-          if (novoWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            mostrarBannerAtualizacao(registro);
-          }
-        });
       });
     }, function (erro) {
       console.warn('Falha ao registrar o Service Worker:', erro);
     });
   });
 
+  // O próprio sw.js já ativa a versão nova sozinho (skipWaiting automático
+  // no install) — aqui só reagimos à troca de controlador, recarregando a
+  // página pra aplicar a atualização de fato. Sem isso, o código novo já
+  // estaria "no comando" nos bastidores, mas a aba continuaria rodando o
+  // JavaScript antigo, já carregado em memória, até um reload de qualquer
+  // natureza acontecer.
   navigator.serviceWorker.addEventListener('controllerchange', function () {
-    if (!atualizacaoPendente || recarregandoPorAtualizacao) return;
+    if (!haviaControladorAntes || recarregandoPorAtualizacao) return;
     recarregandoPorAtualizacao = true;
-    window.location.reload();
+    bannerAtualizacaoEl.hidden = false;
+    setTimeout(function () { window.location.reload(); }, 600);
   });
 }

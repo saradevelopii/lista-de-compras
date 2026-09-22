@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Sacola — lista de compras</title>
+  <title>Qlista — lista de compras</title>
   <meta name="description" content="Lista de compras com múltiplas listas, corredores, orçamento e sincronização em tempo real, que funciona sem internet.">
 
   <meta name="theme-color" content="#1B4E9B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Sacola">
+  <meta name="apple-mobile-web-app-title" content="Qlista">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
   <link rel="manifest" href="manifest.json">
@@ -20,17 +20,13 @@
   <div class="app">
 
     <div class="atualizacao" id="banner-atualizacao" role="status" aria-live="polite" hidden>
-      <span class="atualizacao__texto">Nova versão disponível!</span>
-      <div class="atualizacao__acoes">
-        <button type="button" class="atualizacao__botao" id="botao-atualizar">Atualizar Agora</button>
-        <button type="button" class="atualizacao__fechar" id="botao-fechar-atualizacao" aria-label="Adiar atualização">✕</button>
-      </div>
+      <span class="atualizacao__texto">Atualizando para a versão mais nova…</span>
     </div>
 
     <header class="topo">
       <div class="topo__linha">
         <button type="button" class="topo__titulo" id="botao-listas" aria-haspopup="true" aria-controls="tela-listas">
-          <span id="nome-lista-ativa">Sacola</span><span class="topo__seta">▾</span>
+          <span id="nome-lista-ativa">Qlista</span><span class="topo__seta">▾</span>
         </button>
         <button type="button" class="topo__menu" id="botao-menu" aria-haspopup="dialog" aria-controls="menu-institucional" aria-label="Sobre o app, licença e suporte">⋮</button>
       </div>
@@ -211,12 +207,13 @@
     </div>
   </div>
 
-  <div class="dialogo" id="menu-institucional" hidden role="dialog" aria-modal="true" aria-label="Sobre o Sacola">
+  <div class="dialogo" id="menu-institucional" hidden role="dialog" aria-modal="true" aria-label="Sobre o app">
     <div class="dialogo__caixa dialogo__caixa--menu">
       <button type="button" class="dialogo__fechar" id="fechar-menu" aria-label="Fechar">×</button>
 
-      <h2>Sobre o Sacola</h2>
-      <p>Um app de lista de compras que funciona offline, sincroniza em tempo real entre aparelhos e organiza os itens pelo trajeto da sua loja. Versão 3.0.0.</p>
+      <h2 id="menu-titulo-sobre">Sobre o app</h2>
+      <p>Um app de lista de compras que funciona offline, sincroniza em tempo real entre aparelhos e organiza os itens pelo trajeto da sua loja.</p>
+      <p class="dialogo__versao">Versão <span id="menu-versao-app"></span></p>
 
       <h3>Licença</h3>
       <p><a href="https://opensource.org/license/mit/" target="_blank" rel="noopener">Clique aqui para obter sua licença</a></p>

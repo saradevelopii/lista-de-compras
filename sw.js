@@ -1,10 +1,10 @@
 /* =========================================================
-   Sacola — Service Worker
+   Qlista — Service Worker
    Cache-first: tudo do projeto fica salvo na instalação.
    Troque a versão abaixo sempre que alterar algum arquivo.
    ========================================================= */
 
-var VERSAO = 'sacola-v16';
+var VERSAO = 'qlista-v18';
 
 var ARQUIVOS = [
   './',
@@ -19,6 +19,7 @@ var ARQUIVOS = [
   './js/render.js',
   './js/mascara.js',
   './js/dialogo.js',
+  './js/identidade.js',
   './js/historico.js',
   './js/compartilhar.js',
   './js/link.js',
@@ -40,11 +41,13 @@ var ARQUIVOS_EXTERNOS = [
   'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js'
 ];
 
-// Instalação: baixa e guarda todos os arquivos, mas NÃO assume o
-// controle sozinho — fica em espera até o cliente pedir (ver
-// listener de 'message' abaixo), disparado pelo banner "Atualizar"
-// em script.js. Assim a pessoa nunca perde o que estava digitando
-// por uma troca de versão no meio do uso.
+// Instalação: baixa e guarda todos os arquivos, e já assume o
+// controle sozinho assim que terminar (skipWaiting automático) —
+// a atualização é 100% automática, sem precisar de nenhum clique.
+// A pequena troca: se alguém estiver digitando algo bem na hora
+// em que a nova versão assume, o texto não salvo daquele campo
+// pode se perder no recarregamento — itens já adicionados não são
+// afetados, só o que estava sendo digitado naquele instante.
 self.addEventListener('install', function (evento) {
   evento.waitUntil(
     caches.open(VERSAO).then(function (cache) {
@@ -55,16 +58,10 @@ self.addEventListener('install', function (evento) {
           });
         }));
       });
+    }).then(function () {
+      return self.skipWaiting();
     })
   );
-});
-
-// Permite que a página peça para este Service Worker (em espera)
-// assumir o controle imediatamente, sem precisar fechar o app.
-self.addEventListener('message', function (evento) {
-  if (evento.data && evento.data.tipo === 'ativar-agora') {
-    self.skipWaiting();
-  }
 });
 
 // Ativação: apaga caches de versões antigas

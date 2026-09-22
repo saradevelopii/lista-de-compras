@@ -234,6 +234,7 @@ export function renderPainelFinanceiro(el, dados) {
   var linhaSaldo = el.querySelector('[data-linha-saldo]');
   if (dados.saldo == null) {
     linhaSaldo.hidden = true;
+    saldoEl.textContent = ''; // nunca deixa um valor antigo "preso" no DOM, mesmo se o CSS falhar
   } else {
     linhaSaldo.hidden = false;
     saldoEl.textContent = formatarMoeda(dados.saldo);

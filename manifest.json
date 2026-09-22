@@ -1,6 +1,6 @@
 {
-  "name": "Sacola — lista de compras",
-  "short_name": "Sacola",
+  "name": "Qlista — lista de compras",
+  "short_name": "Qlista",
   "description": "Lista de compras que funciona sem internet e guarda os itens no próprio aparelho.",
   "start_url": "./index.html",
   "scope": "./",
