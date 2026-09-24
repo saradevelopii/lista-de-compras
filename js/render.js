@@ -258,17 +258,31 @@ export function renderPainelFinanceiro(el, dados) {
  * @param {string[]} layoutAtual
  * @param {Categoria[]} todasCategorias
  */
-export function renderPainelCorredores(el, layoutAtual, todasCategorias) {
+/**
+ * Redesenha a lista reordenável de corredores (Ordenação de Corredores).
+ * Corredores personalizados ganham "Renomear"/"Excluir"; os fixos do
+ * sistema (Hortifrúti, Padaria etc.) ficam só com o nome e a alça —
+ * são o padrão compartilhado, não "seus" pra editar ou remover.
+ * @param {HTMLElement} el
+ * @param {string[]} layoutAtual
+ * @param {Categoria[]} todasCategorias
+ * @param {Set<string>} chavesPersonalizadas
+ * @param {{aoRenomear:Function, aoExcluir:Function}} acoes
+ */
+export function renderPainelCorredores(el, layoutAtual, todasCategorias, chavesPersonalizadas, acoes) {
   el.textContent = '';
 
   var lista = document.createElement('ol');
   lista.className = 'corredores__lista';
 
   layoutAtual.forEach(function (chave) {
+    var ehPersonalizado = chavesPersonalizadas.has(chave);
+    var nome = nomeCategoria(chave, todasCategorias);
+
     var li = document.createElement('li');
     li.className = 'corredores__item';
     li.dataset.id = chave;
-    li.title = 'Mantenha pressionado e arraste para reordenar';
+    li.title = 'Mantenha pressionado a alça e arraste para reordenar';
 
     var alca = document.createElement('span');
     alca.className = 'corredores__alca';
@@ -277,10 +291,28 @@ export function renderPainelCorredores(el, layoutAtual, todasCategorias) {
 
     var nomeEl = document.createElement('span');
     nomeEl.className = 'corredores__nome';
-    nomeEl.textContent = nomeCategoria(chave, todasCategorias);
+    nomeEl.textContent = nome;
 
     li.appendChild(alca);
     li.appendChild(nomeEl);
+
+    if (ehPersonalizado) {
+      var botaoRenomear = document.createElement('button');
+      botaoRenomear.type = 'button';
+      botaoRenomear.className = 'corredores__acao';
+      botaoRenomear.textContent = 'Renomear';
+      botaoRenomear.addEventListener('click', function () { acoes.aoRenomear(chave, nome); });
+
+      var botaoExcluir = document.createElement('button');
+      botaoExcluir.type = 'button';
+      botaoExcluir.className = 'corredores__acao corredores__acao--excluir';
+      botaoExcluir.textContent = 'Excluir';
+      botaoExcluir.addEventListener('click', function () { acoes.aoExcluir(chave, nome); });
+
+      li.appendChild(botaoRenomear);
+      li.appendChild(botaoExcluir);
+    }
+
     lista.appendChild(li);
   });
 

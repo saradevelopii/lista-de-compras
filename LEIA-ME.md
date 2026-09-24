@@ -31,7 +31,7 @@ lista-de-compras/
 
 **Dependência externa:** o `index.html` carrega o [SortableJS](https://github.com/SortableJS/Sortable) via CDN (`cdn.jsdelivr.net`), usado só pela reordenação manual (arrastar produtos/corredores). É pré-cacheado pelo Service Worker em "melhor esforço" — se o CDN estiver fora do ar bem na primeira instalação, o resto do app funciona normalmente, só a reordenação fica temporariamente indisponível até o CDN responder.
 
-**Versão do app:** `js/identidade.js` tem `NOME_APP` e `VERSAO_APP` — a única fonte de verdade dos dois. O modal "Sobre" lê esses valores em vez de ter o texto duplicado; a cada release, muda só ali e reflete em todo canto. Não confundir com o `VERSAO` do `sw.js` — aquele é um identificador técnico de cache, interno, que muda a cada alteração de arquivo (não é a versão que aparece pro usuário).
+**Versão do app:** `js/identidade.js` tem `NOME_APP` e `VERSAO_APP` — a única fonte de verdade dos dois. O modal "Sobre" lê esses valores em vez de ter o texto duplicado. Bump a cada mudança publicada (PATCH pra correção, MINOR pra funcionalidade nova) — junto com o `VERSAO` do `sw.js`, que é um identificador técnico de cache à parte, com esquema próprio (`qlista-vN`), não a versão que aparece pro usuário.
 
 **Nota sobre o rebrand (Sacola → Qlista):** o nome trocou em todo lugar visível ao usuário (título, manifest, modal Sobre). As CHAVES do `localStorage` (`sacola:itens`, `sacola:listas` etc.) continuam com o prefixo antigo de propósito — são só identificadores técnicos internos, invisíveis ao usuário, e trocar isso quebraria os dados de quem já usa o app (as listas dele ficariam "perdidas" sob a chave nova). O prefixo do cache do Service Worker (`qlista-vN`), por outro lado, já foi renomeado — esse é seguro de mudar, porque se autolimpa a cada versão de qualquer forma.
 
@@ -52,7 +52,7 @@ Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 - **Sincronização em tempo real**: qualquer alteração (adicionar, editar, marcar, excluir) aparece nos outros aparelhos conectados à mesma lista, sem precisar recarregar.
 - **Fallback local**: sem Firebase configurado (ou sem internet), tudo continua funcionando normalmente, só local.
 - **Quantidade e unidade**: campos separados (`un`, `kg`, `g`, `L`, `ml`, `caixa`, `pacote`). Sem quantidade informada, assume `1 un`.
-- **Corredores personalizados**: crie corredores próprios (ex: "Açougue do Bairro") na tela de Ordenação de Corredores — ficam disponíveis na hora, no cadastro e na edição de itens.
+- **Corredores personalizados**: crie corredores próprios (ex: "Açougue do Bairro") na tela de Ordenação de Corredores — ficam disponíveis na hora, no cadastro e na edição de itens. Também dá pra renomear e excluir, igual às listas (os 9 corredores fixos do sistema não têm essas ações — são o padrão compartilhado).
 - **Edição completa**: toca no item para editar nome, quantidade, unidade, categoria e preço; salva no primeiro clique.
 - **Autocompletar por frequência**: ao digitar o nome de um produto, sugestões dos itens mais usados aparecem (ordenadas por frequência); escolher uma preenche nome, categoria e unidade habituais.
 - **Compartilhar como texto**: botão "Compartilhar" monta um texto formatado (🛒 nome da lista, itens por corredor) e usa a Web Share API, com cópia para a área de transferência como alternativa.
@@ -126,10 +126,10 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `qlista-v19`; na próxima mudança, use `qlista-v20`):
+Troque a versão no topo do `sw.js` (já está em `qlista-v21`; na próxima mudança, use `qlista-v22`):
 
 ```js
-var VERSAO = 'qlista-v20';
+var VERSAO = 'qlista-v22';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.

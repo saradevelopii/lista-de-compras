@@ -311,6 +311,54 @@ function criarLoja() {
       return chave;
     },
 
+    renomearCategoriaPersonalizada: function (chave, novoNome) {
+      var nomeLimpo = String(novoNome || '').trim();
+      if (!nomeLimpo) return;
+
+      var antes = categoriasPersonalizadas;
+      var encontrada = false;
+      categoriasPersonalizadas = categoriasPersonalizadas.map(function (c) {
+        if (c.chave !== chave) return c;
+        encontrada = true;
+        return Object.assign({}, c, { nome: nomeLimpo });
+      });
+      if (!encontrada) { categoriasPersonalizadas = antes; return; }
+
+      if (!salvarCategoriasPersonalizadas(categoriasPersonalizadas)) {
+        categoriasPersonalizadas = antes;
+        notificar({ tipo: 'erro', mensagem: 'Não foi possível renomear o corredor.' });
+        return;
+      }
+      notificar({ tipo: 'categorias' });
+    },
+
+    /**
+     * Só corredores personalizados podem ser excluídos — os fixos são
+     * o padrão compartilhado do sistema. Itens que já usavam o corredor
+     * excluído não são reclassificados à força: continuam existindo
+     * normalmente e, como a chave deles deixa de aparecer na lista de
+     * categorias válidas, passam a ser exibidos como "Outros" e ordenados
+     * ao final — o mesmo tratamento que qualquer categoria desconhecida
+     * já recebe em ordenarPorCorredor/nomeCategoria.
+     */
+    excluirCategoriaPersonalizada: function (chave) {
+      var antes = categoriasPersonalizadas;
+      var nova = categoriasPersonalizadas.filter(function (c) { return c.chave !== chave; });
+      if (nova.length === antes.length) return; // não é um corredor personalizado — nada a fazer
+
+      if (!salvarCategoriasPersonalizadas(nova)) {
+        notificar({ tipo: 'erro', mensagem: 'Não foi possível excluir o corredor.' });
+        return;
+      }
+      categoriasPersonalizadas = nova;
+
+      var antesConfig = config;
+      config = Object.assign({}, config, { layoutAtual: config.layoutAtual.filter(function (c) { return c !== chave; }) });
+      persistirConfigOuReverter(antesConfig);
+
+      notificar({ tipo: 'categorias' });
+    },
+
     /* ---------- Histórico / autocompletar ---------- */
 
     buscarSugestoesDeProduto: function (texto) {

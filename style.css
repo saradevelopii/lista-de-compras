@@ -278,6 +278,7 @@ button, input, select {
 
 .corredores__item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
@@ -312,6 +313,23 @@ button, input, select {
 
 .corredores__nome {
   flex: 1 1 auto;
+}
+
+.corredores__acao {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  background: var(--neve);
+  color: var(--cinza);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.corredores__acao--excluir {
+  color: var(--vermelho);
+  border-color: rgba(209, 56, 44, 0.35);
 }
 
 /* ---------- Área da lista: cresce e rola ---------- */

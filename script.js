@@ -223,12 +223,26 @@ function desenharPainelFinanceiro() {
 }
 
 function desenharPainelCorredores() {
-  var config = loja.obterEstado().config;
-  renderPainelCorredores(painelCorredoresEl, config.layoutAtual, loja.todasCategorias());
+  var estado = loja.obterEstado();
+  var chavesPersonalizadas = new Set(estado.categoriasPersonalizadas.map(function (c) { return c.chave; }));
+
+  renderPainelCorredores(painelCorredoresEl, estado.config.layoutAtual, loja.todasCategorias(), chavesPersonalizadas, {
+    aoRenomear: function (chave, nomeAtual) {
+      perguntarNovoNome('Novo nome do corredor:', nomeAtual).then(function (novoNome) {
+        if (novoNome !== null) loja.renomearCategoriaPersonalizada(chave, novoNome);
+      });
+    },
+    aoExcluir: function (chave, nome) {
+      confirmarRemocao('Excluir o corredor “' + nome + '”? Os itens que estavam nele passam a aparecer em "Outros".', 'Excluir').then(function (confirmado) {
+        if (confirmado) loja.excluirCategoriaPersonalizada(chave);
+      });
+    }
+  });
 
   var listaCorredoresEl = painelCorredoresEl.querySelector('.corredores__lista');
   if (listaCorredoresEl) {
     tornarOrdenavel(listaCorredoresEl, {
+      handle: '.corredores__alca',
       aoFinalizar: function (novaOrdemDeIds) { loja.reordenarLayout(novaOrdemDeIds); }
     });
   }
