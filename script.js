@@ -9,7 +9,7 @@
 import { loja } from './js/loja.js';
 import { totalCarrinho, statusOrcamento, saldoRestante } from './js/calculo.js';
 import { aplicarMascaraMoeda, valorNumericoMascarado, definirValorMascarado } from './js/mascara.js';
-import { criarConfirmador } from './js/dialogo.js';
+import { criarConfirmador, criarPrompt } from './js/dialogo.js';
 import { formatarTextoLista, compartilharTexto } from './js/compartilhar.js';
 import { gerarLinkCompartilhavel, obterListaIdDaURL, limparListaIdDaURL } from './js/link.js';
 import {
@@ -91,6 +91,14 @@ var confirmarRemocao = criarConfirmador({
   mensagem: document.getElementById('dialogo-mensagem'),
   botaoCancelar: document.getElementById('dialogo-cancelar'),
   botaoConfirmar: document.getElementById('dialogo-remover-botao')
+});
+
+var perguntarNovoNome = criarPrompt({
+  overlay: document.getElementById('dialogo-prompt'),
+  form: document.getElementById('dialogo-prompt-form'),
+  mensagem: document.getElementById('dialogo-prompt-mensagem'),
+  campo: document.getElementById('dialogo-prompt-campo'),
+  botaoCancelar: document.getElementById('dialogo-prompt-cancelar')
 });
 
 /* ---------- Máscaras de moeda ---------- */
@@ -231,8 +239,9 @@ function desenharTelaListas() {
   renderListaDeListas(painelListasEl, estado.listas, estado.listaAtivaId, {
     aoAlternar: function (id) { loja.alternarLista(id); irParaLista(); },
     aoRenomear: function (id, nomeAtual) {
-      var novoNome = window.prompt('Novo nome da lista:', nomeAtual);
-      if (novoNome !== null) loja.renomearLista(id, novoNome);
+      perguntarNovoNome('Novo nome da lista:', nomeAtual).then(function (novoNome) {
+        if (novoNome !== null) loja.renomearLista(id, novoNome);
+      });
     },
     aoExcluir: function (id, nome) {
       confirmarRemocao('Excluir a lista “' + nome + '” e todos os seus itens?', 'Excluir').then(function (confirmado) {

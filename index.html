@@ -183,6 +183,20 @@
     </div>
   </div>
 
+  <div class="dialogo" id="dialogo-prompt" hidden role="alertdialog" aria-modal="true" aria-label="Renomear lista" aria-describedby="dialogo-prompt-mensagem">
+    <div class="dialogo__caixa">
+      <form id="dialogo-prompt-form">
+        <p class="dialogo__mensagem" id="dialogo-prompt-mensagem"></p>
+        <label class="oculto" for="dialogo-prompt-campo">Novo nome</label>
+        <input class="dialogo__campo" id="dialogo-prompt-campo" type="text" maxlength="60" autocomplete="off">
+        <div class="dialogo__acoes">
+          <button type="button" class="dialogo__cancelar" id="dialogo-prompt-cancelar">Cancelar</button>
+          <button type="submit" class="dialogo__salvar" id="dialogo-prompt-salvar">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="dialogo" id="menu-compartilhar" hidden role="dialog" aria-modal="true" aria-label="Compartilhar lista">
     <div class="dialogo__caixa dialogo__caixa--menu dialogo__caixa--acoes">
       <button type="button" class="dialogo__fechar" id="fechar-menu-compartilhar" aria-label="Fechar">×</button>

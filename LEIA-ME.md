@@ -126,10 +126,10 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `qlista-v18`; na próxima mudança, use `qlista-v19`):
+Troque a versão no topo do `sw.js` (já está em `qlista-v19`; na próxima mudança, use `qlista-v20`):
 
 ```js
-var VERSAO = 'qlista-v19';
+var VERSAO = 'qlista-v20';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.

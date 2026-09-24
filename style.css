@@ -985,7 +985,8 @@ button, input, select {
 }
 
 .dialogo__cancelar,
-.dialogo__remover {
+.dialogo__remover,
+.dialogo__salvar {
   flex: 1 1 0;
   padding: 0.7rem;
   border-radius: var(--raio);
@@ -1004,6 +1005,31 @@ button, input, select {
   border: 0;
   background: var(--vermelho);
   color: var(--branco);
+}
+
+.dialogo__salvar {
+  border: 0;
+  background: var(--azul);
+  color: var(--branco);
+}
+
+.dialogo__campo {
+  display: block;
+  width: 100%;
+  margin: 0 0 1.1rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--neve);
+  color: var(--grafite);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.dialogo__campo:focus {
+  outline: none;
+  border-color: var(--azul);
+  background: var(--branco);
 }
 
 .dialogo__caixa--menu {
