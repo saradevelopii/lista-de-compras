@@ -135,8 +135,19 @@ function desenhar() {
   desenharListas();
   desenharPainelFinanceiro();
   desenharCabecalhoLista();
+  atualizarVisibilidadeDoFormulario();
   if (telaAtual === 'corredores') desenharPainelCorredores();
   if (telaAtual === 'listas') desenharTelaListas();
+}
+
+/**
+ * Única fonte de verdade de quando o formulário de adicionar produto
+ * aparece: só na tela de lista E só quando nenhum item está sendo
+ * editado no momento — evita os dois formulários (adicionar + editar)
+ * ficarem visíveis ao mesmo tempo, sobrepostos ou empilhados na tela.
+ */
+function atualizarVisibilidadeDoFormulario() {
+  formularioEl.hidden = telaAtual !== 'lista' || itemEmEdicaoId !== null;
 }
 
 function desenharCabecalhoLista() {
@@ -366,7 +377,7 @@ function irParaLista() {
   telaCorredoresEl.hidden = true;
   telaListasEl.hidden = true;
   telaListaEl.hidden = false;
-  formularioEl.hidden = false;
+  atualizarVisibilidadeDoFormulario();
   botaoCompartilharEl.hidden = false;
   botaoCorredoresEl.textContent = 'Corredores';
   botaoCorredoresEl.removeAttribute('aria-label');
@@ -378,7 +389,7 @@ function irParaCorredores() {
   telaCorredoresEl.hidden = false;
   telaListasEl.hidden = true;
   telaListaEl.hidden = true;
-  formularioEl.hidden = true;
+  atualizarVisibilidadeDoFormulario();
   botaoCompartilharEl.hidden = true;
   botaoCorredoresEl.textContent = 'Voltar';
   botaoCorredoresEl.setAttribute('aria-label', 'Voltar para a lista de compras');
@@ -391,7 +402,7 @@ function irParaListas() {
   telaListasEl.hidden = false;
   telaCorredoresEl.hidden = true;
   telaListaEl.hidden = true;
-  formularioEl.hidden = true;
+  atualizarVisibilidadeDoFormulario();
   botaoCompartilharEl.hidden = true;
   botaoCorredoresEl.textContent = 'Voltar';
   botaoCorredoresEl.setAttribute('aria-label', 'Voltar para a lista de compras');
