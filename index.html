@@ -25,11 +25,12 @@
 
     <header class="topo">
       <div class="topo__linha">
-        <button type="button" class="topo__titulo" id="botao-listas" aria-haspopup="true" aria-controls="tela-listas">
-          <span id="nome-lista-ativa">Qlista</span><span class="topo__seta">▾</span>
-        </button>
+        <span class="topo__marca">Qlista</span>
         <button type="button" class="topo__menu" id="botao-menu" aria-haspopup="dialog" aria-controls="menu-institucional" aria-label="Sobre o app, licença e suporte">⋮</button>
       </div>
+
+      <div class="abas-listas" id="abas-listas" role="tablist" aria-label="Suas listas"></div>
+
       <p class="topo__contagem" id="contagem" aria-live="polite">Nenhum item na sacola</p>
 
       <section class="painel-financeiro" id="painel-financeiro" aria-live="polite">
@@ -74,20 +75,6 @@
         <label class="oculto" for="campo-novo-corredor">Nome do novo corredor</label>
         <input class="corredor-novo__campo" id="campo-novo-corredor" type="text" maxlength="40" placeholder="Novo corredor (ex: Açougue do Bairro)">
         <button class="corredor-novo__botao" type="submit">+ Adicionar</button>
-      </form>
-    </section>
-
-    <section class="tela-listas" id="tela-listas" hidden aria-labelledby="titulo-listas">
-      <div class="tela-listas__cabecalho">
-        <h2 id="titulo-listas">Minhas Listas</h2>
-      </div>
-
-      <div class="listas" id="painel-listas"></div>
-
-      <form class="lista-nova" id="form-nova-lista">
-        <label class="oculto" for="campo-nova-lista">Nome da nova lista</label>
-        <input class="lista-nova__campo" id="campo-nova-lista" type="text" maxlength="60" placeholder="Nova lista (ex: Feira, Farmácia)">
-        <button class="lista-nova__botao" type="submit">+ Criar lista</button>
       </form>
     </section>
 
@@ -194,6 +181,21 @@
           <button type="submit" class="dialogo__salvar" id="dialogo-prompt-salvar">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="dialogo" id="menu-opcoes-lista" hidden role="dialog" aria-modal="true" aria-label="Opções da lista" aria-describedby="menu-opcoes-lista-titulo">
+    <div class="dialogo__caixa dialogo__caixa--menu dialogo__caixa--acoes">
+      <button type="button" class="dialogo__fechar" id="fechar-menu-opcoes-lista" aria-label="Fechar">×</button>
+      <h2 id="menu-opcoes-lista-titulo">Lista</h2>
+
+      <button type="button" class="acao-compartilhar" id="opcao-renomear-lista">
+        <span class="acao-compartilhar__titulo">Renomear</span>
+      </button>
+
+      <button type="button" class="acao-compartilhar acao-compartilhar--excluir" id="opcao-excluir-lista">
+        <span class="acao-compartilhar__titulo">Excluir lista</span>
+      </button>
     </div>
   </div>
 

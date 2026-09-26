@@ -47,7 +47,7 @@ Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 
 ## Funcionalidades
 
-- **Múltiplas listas**: crie, renomeie, alterne e exclua quantas listas quiser (botão com o nome da lista, no topo). Itens, orçamento e ordenação de corredores são isolados por lista.
+- **Múltiplas listas, por abas deslizantes**: a barra logo abaixo do cabeçalho mostra todas as suas listas como pílulas horizontais — arraste pra rolar, toque pra trocar de lista na hora. A última pílula, "+ Nova Lista", abre um diálogo pedindo o nome. Na pílula ativa aparece um "⋮" com Renomear/Excluir (não dá pra excluir a última lista que resta). Itens, orçamento e ordenação de corredores são isolados por lista.
 - **Link compartilhável**: dentro de "Minhas Listas", o botão "Copiar link da lista atual" gera uma URL com o id da lista no hash (`#lista=...`). Quem abre esse link — com o Firebase configurado — vê e edita a mesma lista em tempo real.
 - **Sincronização em tempo real**: qualquer alteração (adicionar, editar, marcar, excluir) aparece nos outros aparelhos conectados à mesma lista, sem precisar recarregar.
 - **Fallback local**: sem Firebase configurado (ou sem internet), tudo continua funcionando normalmente, só local.
@@ -126,10 +126,10 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `qlista-v22`; na próxima mudança, use `qlista-v23`):
+Troque a versão no topo do `sw.js` (já está em `qlista-v23`; na próxima mudança, use `qlista-v24`):
 
 ```js
-var VERSAO = 'qlista-v23';
+var VERSAO = 'qlista-v24';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.

@@ -17,7 +17,7 @@ import {
   criarGrupoDeItens,
   renderPainelFinanceiro,
   renderPainelCorredores,
-  renderListaDeListas,
+  renderAbasDeListas,
   renderSugestoes
 } from './js/render.js';
 import { tornarOrdenavel } from './js/ordenacao.js';
@@ -27,7 +27,6 @@ import { NOME_APP, VERSAO_APP } from './js/identidade.js';
 
 var telaListaEl = document.getElementById('tela-lista');
 var telaCorredoresEl = document.getElementById('tela-corredores');
-var telaListasEl = document.getElementById('tela-listas');
 
 var listaEl = document.getElementById('lista');
 var listaConcluidosEl = document.getElementById('lista-concluidos');
@@ -48,11 +47,12 @@ var painelCorredoresEl = document.getElementById('painel-corredores');
 var formNovoCorredorEl = document.getElementById('form-novo-corredor');
 var campoNovoCorredorEl = document.getElementById('campo-novo-corredor');
 
-var botaoListasEl = document.getElementById('botao-listas');
-var nomeListaAtivaEl = document.getElementById('nome-lista-ativa');
-var painelListasEl = document.getElementById('painel-listas');
-var formNovaListaEl = document.getElementById('form-nova-lista');
-var campoNovaListaEl = document.getElementById('campo-nova-lista');
+var abasListasEl = document.getElementById('abas-listas');
+var menuOpcoesListaEl = document.getElementById('menu-opcoes-lista');
+var menuOpcoesListaTituloEl = document.getElementById('menu-opcoes-lista-titulo');
+var botaoFecharMenuOpcoesListaEl = document.getElementById('fechar-menu-opcoes-lista');
+var opcaoRenomearListaEl = document.getElementById('opcao-renomear-lista');
+var opcaoExcluirListaEl = document.getElementById('opcao-excluir-lista');
 
 var botaoMenuEl = document.getElementById('botao-menu');
 var menuInstitucionalEl = document.getElementById('menu-institucional');
@@ -81,7 +81,7 @@ var toastDesfazerEl = document.getElementById('toast-desfazer');
 
 var itemEmEdicaoId = null;
 var concluidosExpandido = false;
-var telaAtual = 'lista'; // 'lista' | 'corredores' | 'listas'
+var telaAtual = 'lista'; // 'lista' | 'corredores'
 var temporizadorToastErro = null;
 
 /* ---------- Diálogo de confirmação de remoção ---------- */
@@ -134,10 +134,9 @@ var acoesItem = {
 function desenhar() {
   desenharListas();
   desenharPainelFinanceiro();
-  desenharCabecalhoLista();
+  desenharAbasDeListas();
   atualizarVisibilidadeDoFormulario();
   if (telaAtual === 'corredores') desenharPainelCorredores();
-  if (telaAtual === 'listas') desenharTelaListas();
 }
 
 /**
@@ -150,8 +149,17 @@ function atualizarVisibilidadeDoFormulario() {
   formularioEl.hidden = telaAtual !== 'lista' || itemEmEdicaoId !== null;
 }
 
-function desenharCabecalhoLista() {
-  nomeListaAtivaEl.textContent = loja.obterEstado().nomeListaAtiva;
+function desenharAbasDeListas() {
+  var estado = loja.obterEstado();
+  renderAbasDeListas(abasListasEl, estado.listas, estado.listaAtivaId, {
+    aoAlternar: function (id) { loja.alternarLista(id); },
+    aoAbrirOpcoes: function (id, nome) { abrirMenuOpcoesLista(id, nome); },
+    aoCriarNova: function () {
+      perguntarNovoNome('Nome da nova lista:', '').then(function (novoNome) {
+        if (novoNome !== null) loja.criarLista(novoNome);
+      });
+    }
+  });
 }
 
 function desenharListas() {
@@ -259,21 +267,33 @@ function desenharPainelCorredores() {
   }
 }
 
-function desenharTelaListas() {
-  var estado = loja.obterEstado();
-  renderListaDeListas(painelListasEl, estado.listas, estado.listaAtivaId, {
-    aoAlternar: function (id) { loja.alternarLista(id); irParaLista(); },
-    aoRenomear: function (id, nomeAtual) {
-      perguntarNovoNome('Novo nome da lista:', nomeAtual).then(function (novoNome) {
-        if (novoNome !== null) loja.renomearLista(id, novoNome);
-      });
-    },
-    aoExcluir: function (id, nome) {
-      confirmarRemocao('Excluir a lista “' + nome + '” e todos os seus itens?', 'Excluir').then(function (confirmado) {
-        if (confirmado) loja.excluirLista(id);
-      });
-    }
-  });
+/**
+ * Abre o menu de opções (Renomear/Excluir) da lista ativa, acionado
+ * pelo "⋮" na aba. "Excluir" fica desabilitado quando só resta uma
+ * lista — mesma trava de segurança que existia na tela antiga.
+ */
+function abrirMenuOpcoesLista(id, nome) {
+  menuOpcoesListaTituloEl.textContent = nome;
+  opcaoExcluirListaEl.disabled = loja.obterEstado().listas.length <= 1;
+  menuOpcoesListaEl.hidden = false;
+
+  opcaoRenomearListaEl.onclick = function () {
+    fecharMenuOpcoesLista();
+    perguntarNovoNome('Novo nome da lista:', nome).then(function (novoNome) {
+      if (novoNome !== null) loja.renomearLista(id, novoNome);
+    });
+  };
+
+  opcaoExcluirListaEl.onclick = function () {
+    fecharMenuOpcoesLista();
+    confirmarRemocao('Excluir a lista “' + nome + '” e todos os seus itens?', 'Excluir').then(function (confirmado) {
+      if (confirmado) loja.excluirLista(id);
+    });
+  };
+}
+
+function fecharMenuOpcoesLista() {
+  menuOpcoesListaEl.hidden = true;
 }
 
 function desenharOpcoesCategoria() {
@@ -375,7 +395,6 @@ campoOrcamentoEl.addEventListener('input', function () {
 function irParaLista() {
   telaAtual = 'lista';
   telaCorredoresEl.hidden = true;
-  telaListasEl.hidden = true;
   telaListaEl.hidden = false;
   atualizarVisibilidadeDoFormulario();
   botaoCompartilharEl.hidden = false;
@@ -387,7 +406,6 @@ function irParaLista() {
 function irParaCorredores() {
   telaAtual = 'corredores';
   telaCorredoresEl.hidden = false;
-  telaListasEl.hidden = true;
   telaListaEl.hidden = true;
   atualizarVisibilidadeDoFormulario();
   botaoCompartilharEl.hidden = true;
@@ -397,24 +415,8 @@ function irParaCorredores() {
   desenharPainelCorredores();
 }
 
-function irParaListas() {
-  telaAtual = 'listas';
-  telaListasEl.hidden = false;
-  telaCorredoresEl.hidden = true;
-  telaListaEl.hidden = true;
-  atualizarVisibilidadeDoFormulario();
-  botaoCompartilharEl.hidden = true;
-  botaoCorredoresEl.textContent = 'Voltar';
-  botaoCorredoresEl.setAttribute('aria-label', 'Voltar para a lista de compras');
-  desenharTelaListas();
-}
-
 botaoCorredoresEl.addEventListener('click', function () {
   if (telaAtual === 'lista') irParaCorredores(); else irParaLista();
-});
-
-botaoListasEl.addEventListener('click', function () {
-  if (telaAtual === 'listas') irParaLista(); else irParaListas();
 });
 
 /* ---------- Novo corredor personalizado ---------- */
@@ -428,14 +430,16 @@ formNovoCorredorEl.addEventListener('submit', function (evento) {
   }
 });
 
-/* ---------- Múltiplas listas ---------- */
+/* ---------- Múltiplas listas (abas deslizantes) ---------- */
 
-formNovaListaEl.addEventListener('submit', function (evento) {
-  evento.preventDefault();
-  var id = loja.criarLista(campoNovaListaEl.value);
-  // Fica em "Minhas Listas" depois de criar — entrar numa lista pra
-  // adicionar produto é uma ação separada e deliberada (tocar nela).
-  if (id) campoNovaListaEl.value = '';
+botaoFecharMenuOpcoesListaEl.addEventListener('click', fecharMenuOpcoesLista);
+
+menuOpcoesListaEl.addEventListener('click', function (evento) {
+  if (evento.target === menuOpcoesListaEl) fecharMenuOpcoesLista();
+});
+
+document.addEventListener('keydown', function (evento) {
+  if (evento.key === 'Escape' && !menuOpcoesListaEl.hidden) fecharMenuOpcoesLista();
 });
 
 /* ---------- Compartilhar (botão único, com menu de opções) ---------- */
@@ -527,8 +531,7 @@ loja.inscrever(function (evento) {
     desenharOpcoesCategoria();
     desenhar();
   } else if (evento.tipo === 'listas' || evento.tipo === 'lista-alternada') {
-    desenharCabecalhoLista();
-    if (telaAtual === 'listas') desenharTelaListas();
+    desenharAbasDeListas();
   } else if (evento.tipo === 'undo-mostrar') {
     mostrarToastUndo();
   } else if (evento.tipo === 'undo-esconder') {

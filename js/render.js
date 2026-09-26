@@ -327,42 +327,58 @@ export function renderPainelCorredores(el, layoutAtual, todasCategorias, chavesP
  * @param {string} listaAtivaId
  * @param {{aoAlternar:Function, aoRenomear:Function, aoExcluir:Function}} acoes
  */
-export function renderListaDeListas(el, listas, listaAtivaId, acoes) {
+/**
+ * Redesenha a barra horizontal deslizante de abas de listas. Cada aba
+ * é um <div> (não-interativo) contendo um ou dois <button> IRMÃOS —
+ * nunca um botão dentro de outro botão, que é inválido em HTML e
+ * quebra de formas imprevisíveis em leitores de tela. A aba ATIVA
+ * ganha um segundo botão, "⋮" (opções), pra renomear/excluir.
+ * @param {HTMLElement} el
+ * @param {Array<{id:string,nome:string}>} listas
+ * @param {string} listaAtivaId
+ * @param {{aoAlternar:Function, aoAbrirOpcoes:Function, aoCriarNova:Function}} acoes
+ */
+export function renderAbasDeListas(el, listas, listaAtivaId, acoes) {
   el.textContent = '';
-  var ul = document.createElement('ul');
-  ul.className = 'listas__lista';
 
   listas.forEach(function (lista) {
-    var li = document.createElement('li');
-    li.className = 'listas__item' + (lista.id === listaAtivaId ? ' listas__item--ativa' : '');
+    var ativa = lista.id === listaAtivaId;
 
-    var botaoAtivar = document.createElement('button');
-    botaoAtivar.type = 'button';
-    botaoAtivar.className = 'listas__nome';
-    botaoAtivar.textContent = lista.nome;
-    if (lista.id === listaAtivaId) botaoAtivar.setAttribute('aria-current', 'true');
-    botaoAtivar.addEventListener('click', function () { acoes.aoAlternar(lista.id); });
+    var aba = document.createElement('div');
+    aba.className = 'aba-lista' + (ativa ? ' aba-lista--ativa' : '');
+    aba.setAttribute('role', 'presentation');
 
-    var botaoRenomear = document.createElement('button');
-    botaoRenomear.type = 'button';
-    botaoRenomear.className = 'listas__acao';
-    botaoRenomear.textContent = 'Renomear';
-    botaoRenomear.addEventListener('click', function () { acoes.aoRenomear(lista.id, lista.nome); });
+    var botaoNome = document.createElement('button');
+    botaoNome.type = 'button';
+    botaoNome.className = 'aba-lista__nome';
+    botaoNome.textContent = lista.nome;
+    botaoNome.setAttribute('role', 'tab');
+    botaoNome.setAttribute('aria-selected', ativa ? 'true' : 'false');
+    botaoNome.addEventListener('click', function () { acoes.aoAlternar(lista.id); });
+    aba.appendChild(botaoNome);
 
-    var botaoExcluir = document.createElement('button');
-    botaoExcluir.type = 'button';
-    botaoExcluir.className = 'listas__acao listas__acao--excluir';
-    botaoExcluir.textContent = 'Excluir';
-    botaoExcluir.disabled = listas.length <= 1;
-    botaoExcluir.addEventListener('click', function () { acoes.aoExcluir(lista.id, lista.nome); });
+    if (ativa) {
+      var botaoOpcoes = document.createElement('button');
+      botaoOpcoes.type = 'button';
+      botaoOpcoes.className = 'aba-lista__opcoes';
+      botaoOpcoes.textContent = '⋮';
+      botaoOpcoes.setAttribute('aria-label', 'Opções da lista ' + lista.nome);
+      botaoOpcoes.addEventListener('click', function () { acoes.aoAbrirOpcoes(lista.id, lista.nome); });
+      aba.appendChild(botaoOpcoes);
+    }
 
-    li.appendChild(botaoAtivar);
-    li.appendChild(botaoRenomear);
-    li.appendChild(botaoExcluir);
-    ul.appendChild(li);
+    el.appendChild(aba);
   });
 
-  el.appendChild(ul);
+  var abaNova = document.createElement('div');
+  abaNova.className = 'aba-lista aba-lista--nova';
+  var botaoNova = document.createElement('button');
+  botaoNova.type = 'button';
+  botaoNova.className = 'aba-lista__nome';
+  botaoNova.textContent = '+ Nova Lista';
+  botaoNova.addEventListener('click', function () { acoes.aoCriarNova(); });
+  abaNova.appendChild(botaoNova);
+  el.appendChild(abaNova);
 }
 
 /**
