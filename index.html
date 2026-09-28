@@ -25,7 +25,9 @@
 
     <header class="topo">
       <div class="topo__linha">
-        <span class="topo__marca">Qlista</span>
+        <button type="button" class="topo__marca" id="botao-pastas" aria-haspopup="true" aria-controls="tela-pastas">
+          <span class="topo__marca-texto" id="nome-pasta-ativa">Minhas pastas</span><span class="topo__seta" aria-hidden="true">▾</span>
+        </button>
         <button type="button" class="topo__menu" id="botao-menu" aria-haspopup="dialog" aria-controls="menu-institucional" aria-label="Sobre o app, licença e suporte">⋮</button>
       </div>
 
@@ -63,6 +65,20 @@
         </button>
       </div>
     </header>
+
+    <section class="tela-pastas" id="tela-pastas" hidden aria-labelledby="titulo-pastas">
+      <div class="tela-pastas__cabecalho">
+        <h2 id="titulo-pastas">Minhas Pastas</h2>
+      </div>
+
+      <div class="pastas" id="painel-pastas"></div>
+
+      <form class="pasta-nova" id="form-nova-pasta">
+        <label class="oculto" for="campo-nova-pasta">Nome da nova pasta</label>
+        <input class="pasta-nova__campo" id="campo-nova-pasta" type="text" maxlength="60" placeholder="Nova pasta (ex: Casa de Praia)">
+        <button class="pasta-nova__botao" type="submit">+ Criar pasta</button>
+      </form>
+    </section>
 
     <section class="tela-corredores" id="tela-corredores" hidden aria-labelledby="titulo-corredores">
       <div class="tela-corredores__cabecalho">

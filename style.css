@@ -93,14 +93,32 @@ button, input, select {
 }
 
 .topo__marca {
+  all: unset;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
   margin: 0;
-  font-size: 1.85rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  max-width: 65vw;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.topo__marca:active { opacity: 0.8; }
+
+.topo__marca-texto {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.topo__seta {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  opacity: 0.75;
 }
 
 .topo__menu {
@@ -226,6 +244,118 @@ button, input, select {
 }
 
 /* ---------- Tela de Ordenação de Corredores ---------- */
+
+.tela-pastas {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 1.1rem 1.25rem 1.5rem;
+}
+
+.tela-pastas[hidden] { display: none; }
+
+.tela-pastas__cabecalho { margin-bottom: 0.9rem; }
+
+.tela-pastas__cabecalho h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--azul-fundo);
+}
+
+.pastas__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pastas__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--branco);
+}
+
+.pastas__item--ativa { border-color: var(--azul); border-width: 2px; }
+
+.pastas__nome {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.3rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--grafite);
+  font-size: 0.98rem;
+  font-weight: 700;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pastas__item--ativa .pastas__nome { color: var(--azul); }
+
+.pastas__acao {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  background: var(--neve);
+  color: var(--cinza);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pastas__acao--excluir { color: var(--vermelho); border-color: rgba(209, 56, 44, 0.35); }
+
+.pastas__acao:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.pasta-nova {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.9rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--linha);
+}
+
+.pasta-nova__campo {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--branco);
+  color: var(--grafite);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.pasta-nova__campo:focus {
+  outline: none;
+  border-color: var(--azul);
+}
+
+.pasta-nova__botao {
+  flex: 0 0 auto;
+  padding: 0.65rem 0.9rem;
+  border: 0;
+  border-radius: var(--raio);
+  background: var(--azul);
+  color: var(--branco);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
 
 .tela-corredores {
   flex: 1 1 auto;

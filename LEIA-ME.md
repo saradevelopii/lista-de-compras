@@ -47,7 +47,8 @@ Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 
 ## Funcionalidades
 
-- **Múltiplas listas, por abas deslizantes**: a barra logo abaixo do cabeçalho mostra todas as suas listas como pílulas horizontais — arraste pra rolar, toque pra trocar de lista na hora. A última pílula, "+ Nova Lista", abre um diálogo pedindo o nome. Na pílula ativa aparece um "⋮" com Renomear/Excluir (não dá pra excluir a última lista que resta). Itens, orçamento e ordenação de corredores são isolados por lista.
+- **Pastas (workspaces)**: as listas agora vivem dentro de pastas (ex: "Casa", "Casa de Praia"). O nome no topo do app é o da pasta ativa — toque nele pra abrir o painel de pastas (criar, renomear, excluir). Selecionar uma pasta troca o carrossel de listas pra mostrar só as dela. Toda pasta nasce com uma lista dentro; não dá pra ficar sem nenhuma pasta, nem sem nenhuma lista dentro de uma pasta.
+- **Múltiplas listas, por abas deslizantes**: a barra logo abaixo do cabeçalho mostra as listas da pasta ativa como pílulas horizontais — arraste pra rolar, toque pra trocar de lista na hora (mesmo estando na tela de Corredores, já volta direto pra lista escolhida). A última pílula, "+ Nova Lista", abre um diálogo pedindo o nome. Na pílula ativa aparece um "⋮" com Renomear/Excluir (não dá pra excluir a última lista da pasta). Itens, orçamento e ordenação de corredores são isolados por lista.
 - **Link compartilhável**: dentro de "Minhas Listas", o botão "Copiar link da lista atual" gera uma URL com o id da lista no hash (`#lista=...`). Quem abre esse link — com o Firebase configurado — vê e edita a mesma lista em tempo real.
 - **Sincronização em tempo real**: qualquer alteração (adicionar, editar, marcar, excluir) aparece nos outros aparelhos conectados à mesma lista, sem precisar recarregar.
 - **Fallback local**: sem Firebase configurado (ou sem internet), tudo continua funcionando normalmente, só local.

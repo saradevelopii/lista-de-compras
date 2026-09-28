@@ -17,6 +17,7 @@ import {
   criarGrupoDeItens,
   renderPainelFinanceiro,
   renderPainelCorredores,
+  renderPainelPastas,
   renderAbasDeListas,
   renderSugestoes
 } from './js/render.js';
@@ -54,6 +55,13 @@ var botaoFecharMenuOpcoesListaEl = document.getElementById('fechar-menu-opcoes-l
 var opcaoRenomearListaEl = document.getElementById('opcao-renomear-lista');
 var opcaoExcluirListaEl = document.getElementById('opcao-excluir-lista');
 
+var telaPastasEl = document.getElementById('tela-pastas');
+var botaoPastasEl = document.getElementById('botao-pastas');
+var nomePastaAtivaEl = document.getElementById('nome-pasta-ativa');
+var painelPastasEl = document.getElementById('painel-pastas');
+var formNovaPastaEl = document.getElementById('form-nova-pasta');
+var campoNovaPastaEl = document.getElementById('campo-nova-pasta');
+
 var botaoMenuEl = document.getElementById('botao-menu');
 var menuInstitucionalEl = document.getElementById('menu-institucional');
 var botaoFecharMenuEl = document.getElementById('fechar-menu');
@@ -81,7 +89,7 @@ var toastDesfazerEl = document.getElementById('toast-desfazer');
 
 var itemEmEdicaoId = null;
 var concluidosExpandido = false;
-var telaAtual = 'lista'; // 'lista' | 'corredores'
+var telaAtual = 'lista'; // 'lista' | 'corredores' | 'pastas'
 var temporizadorToastErro = null;
 
 /* ---------- Diálogo de confirmação de remoção ---------- */
@@ -134,9 +142,11 @@ var acoesItem = {
 function desenhar() {
   desenharListas();
   desenharPainelFinanceiro();
+  desenharNomePasta();
   desenharAbasDeListas();
   atualizarVisibilidadeDoFormulario();
   if (telaAtual === 'corredores') desenharPainelCorredores();
+  if (telaAtual === 'pastas') desenharPainelPastas();
 }
 
 /**
@@ -151,12 +161,36 @@ function atualizarVisibilidadeDoFormulario() {
 
 function desenharAbasDeListas() {
   var estado = loja.obterEstado();
-  renderAbasDeListas(abasListasEl, estado.listas, estado.listaAtivaId, {
-    aoAlternar: function (id) { loja.alternarLista(id); },
+  renderAbasDeListas(abasListasEl, estado.listasDaPastaAtiva, estado.listaAtivaId, {
+    // Trocar de lista pelo carrossel sempre leva direto pra tela
+    // principal dessa lista — mesmo se a pessoa estiver vendo os
+    // Corredores (ou Pastas) de outra lista no momento do toque.
+    aoAlternar: function (id) { loja.alternarLista(id); irParaLista(); },
     aoAbrirOpcoes: function (id, nome) { abrirMenuOpcoesLista(id, nome); },
     aoCriarNova: function () {
       perguntarNovoNome('Nome da nova lista:', '').then(function (novoNome) {
         if (novoNome !== null) loja.criarLista(novoNome);
+      });
+    }
+  });
+}
+
+function desenharNomePasta() {
+  nomePastaAtivaEl.textContent = loja.obterEstado().nomePastaAtiva;
+}
+
+function desenharPainelPastas() {
+  var estado = loja.obterEstado();
+  renderPainelPastas(painelPastasEl, estado.pastas, estado.pastaAtivaId, {
+    aoAlternar: function (id) { loja.alternarPasta(id); irParaLista(); },
+    aoRenomear: function (id, nomeAtual) {
+      perguntarNovoNome('Novo nome da pasta:', nomeAtual).then(function (novoNome) {
+        if (novoNome !== null) loja.renomearPasta(id, novoNome);
+      });
+    },
+    aoExcluir: function (id, nome) {
+      confirmarRemocao('Excluir a pasta “' + nome + '” e todas as suas listas?', 'Excluir').then(function (confirmado) {
+        if (confirmado) loja.excluirPasta(id);
       });
     }
   });
@@ -395,7 +429,11 @@ campoOrcamentoEl.addEventListener('input', function () {
 function irParaLista() {
   telaAtual = 'lista';
   telaCorredoresEl.hidden = true;
+  telaPastasEl.hidden = true;
   telaListaEl.hidden = false;
+  abasListasEl.hidden = false;
+  contagemEl.hidden = false;
+  painelFinanceiroEl.hidden = false;
   atualizarVisibilidadeDoFormulario();
   botaoCompartilharEl.hidden = false;
   botaoCorredoresEl.textContent = 'Corredores';
@@ -406,6 +444,7 @@ function irParaLista() {
 function irParaCorredores() {
   telaAtual = 'corredores';
   telaCorredoresEl.hidden = false;
+  telaPastasEl.hidden = true;
   telaListaEl.hidden = true;
   atualizarVisibilidadeDoFormulario();
   botaoCompartilharEl.hidden = true;
@@ -415,8 +454,39 @@ function irParaCorredores() {
   desenharPainelCorredores();
 }
 
+/**
+ * Tela de gerenciamento de pastas: fica um nível acima de qualquer
+ * lista específica, então esconde tudo que só faz sentido dentro de
+ * uma lista aberta (abas de listas, contagem, painel financeiro).
+ */
+function irParaPastas() {
+  telaAtual = 'pastas';
+  telaPastasEl.hidden = false;
+  telaCorredoresEl.hidden = true;
+  telaListaEl.hidden = true;
+  abasListasEl.hidden = true;
+  contagemEl.hidden = true;
+  painelFinanceiroEl.hidden = true;
+  atualizarVisibilidadeDoFormulario();
+  botaoCompartilharEl.hidden = true;
+  botaoCorredoresEl.textContent = 'Voltar';
+  botaoCorredoresEl.setAttribute('aria-label', 'Voltar para a lista de compras');
+  botaoCorredoresEl.setAttribute('aria-expanded', 'true');
+  desenharPainelPastas();
+}
+
 botaoCorredoresEl.addEventListener('click', function () {
   if (telaAtual === 'lista') irParaCorredores(); else irParaLista();
+});
+
+botaoPastasEl.addEventListener('click', function () {
+  if (telaAtual === 'pastas') irParaLista(); else irParaPastas();
+});
+
+formNovaPastaEl.addEventListener('submit', function (evento) {
+  evento.preventDefault();
+  var id = loja.criarPasta(campoNovaPastaEl.value);
+  if (id) { campoNovaPastaEl.value = ''; irParaLista(); }
 });
 
 /* ---------- Novo corredor personalizado ---------- */
@@ -532,6 +602,10 @@ loja.inscrever(function (evento) {
     desenhar();
   } else if (evento.tipo === 'listas' || evento.tipo === 'lista-alternada') {
     desenharAbasDeListas();
+  } else if (evento.tipo === 'pastas') {
+    desenharNomePasta();
+    desenharAbasDeListas();
+    if (telaAtual === 'pastas') desenharPainelPastas();
   } else if (evento.tipo === 'undo-mostrar') {
     mostrarToastUndo();
   } else if (evento.tipo === 'undo-esconder') {

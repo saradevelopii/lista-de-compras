@@ -9,6 +9,8 @@ import { sanearLayout } from './categorias.js';
 
 var CHAVE_LISTAS = 'sacola:listas';
 var CHAVE_LISTA_ATIVA = 'sacola:lista-ativa';
+var CHAVE_PASTAS = 'sacola:pastas';
+var CHAVE_PASTA_ATIVA = 'sacola:pasta-ativa';
 var CHAVE_CATEGORIAS_PERSONALIZADAS = 'sacola:categorias-personalizadas';
 var CHAVE_HISTORICO = 'sacola:historico';
 
@@ -39,13 +41,55 @@ function migrarParaMultiplasListasSeNecessario() {
 }
 migrarParaMultiplasListasSeNecessario();
 
+/* ---------- Migração única: listas soltas -> organizadas em pastas ---------- */
+// Quem já usava múltiplas listas antes desta versão não tinha o
+// conceito de pasta. Na primeira carga desta versão, criamos uma
+// pasta padrão e colocamos TODAS as listas existentes dentro dela —
+// nada muda visualmente pra quem já usava o app, só ganha a
+// organização por pasta a partir daqui.
+
+function migrarParaPastasSeNecessario() {
+  try {
+    if (localStorage.getItem(CHAVE_PASTAS)) return; // já migrado
+
+    var pastaId = gerarId();
+    localStorage.setItem(CHAVE_PASTAS, JSON.stringify([{ id: pastaId, nome: 'Minhas pastas', criadoEm: Date.now() }]));
+    localStorage.setItem(CHAVE_PASTA_ATIVA, pastaId);
+
+    var listasBrutas = localStorage.getItem(CHAVE_LISTAS);
+    if (listasBrutas) {
+      var listas = JSON.parse(listasBrutas);
+      if (Array.isArray(listas)) {
+        listas = listas.map(function (l) { return Object.assign({}, l, { pastaId: pastaId }); });
+        localStorage.setItem(CHAVE_LISTAS, JSON.stringify(listas));
+      }
+    }
+  } catch (erro) {
+    console.warn('Não foi possível migrar para o formato de pastas:', erro);
+  }
+}
+migrarParaPastasSeNecessario();
+
 /* ---------- Listas (metadados: id, nome, data de criação) ---------- */
 
 export function carregarListas() {
   try {
     var bruto = localStorage.getItem(CHAVE_LISTAS);
     var dados = bruto ? JSON.parse(bruto) : [];
-    return Array.isArray(dados) ? dados : [];
+    if (!Array.isArray(dados)) return [];
+    // defesa: uma lista sem pastaId (dado corrompido ou de uma versão
+    // anterior à migração) cai na primeira pasta existente, em vez de
+    // ficar invisível pra sempre em nenhum carrossel
+    var pastaPadrao = (function () {
+      try {
+        var brutoPastas = localStorage.getItem(CHAVE_PASTAS);
+        var pastas = brutoPastas ? JSON.parse(brutoPastas) : [];
+        return Array.isArray(pastas) && pastas[0] ? pastas[0].id : null;
+      } catch (erro) { return null; }
+    })();
+    return dados.map(function (l) {
+      return l && !l.pastaId && pastaPadrao ? Object.assign({}, l, { pastaId: pastaPadrao }) : l;
+    });
   } catch (erro) {
     console.warn('Não foi possível ler as listas salvas:', erro);
     return [];
@@ -87,6 +131,47 @@ export function excluirDadosDaLista(listaId) {
     return true;
   } catch (erro) {
     console.warn('Não foi possível remover os dados da lista:', erro);
+    return false;
+  }
+}
+
+/* ---------- Pastas (metadados: id, nome, data de criação) ---------- */
+
+export function carregarPastas() {
+  try {
+    var bruto = localStorage.getItem(CHAVE_PASTAS);
+    var dados = bruto ? JSON.parse(bruto) : [];
+    return Array.isArray(dados) ? dados : [];
+  } catch (erro) {
+    console.warn('Não foi possível ler as pastas salvas:', erro);
+    return [];
+  }
+}
+
+export function salvarPastas(pastas) {
+  try {
+    localStorage.setItem(CHAVE_PASTAS, JSON.stringify(pastas));
+    return true;
+  } catch (erro) {
+    console.warn('Não foi possível salvar as pastas:', erro);
+    return false;
+  }
+}
+
+export function carregarPastaAtivaId() {
+  try {
+    return localStorage.getItem(CHAVE_PASTA_ATIVA);
+  } catch (erro) {
+    return null;
+  }
+}
+
+export function salvarPastaAtivaId(id) {
+  try {
+    localStorage.setItem(CHAVE_PASTA_ATIVA, id);
+    return true;
+  } catch (erro) {
+    console.warn('Não foi possível salvar a pasta ativa:', erro);
     return false;
   }
 }

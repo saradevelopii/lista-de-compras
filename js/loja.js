@@ -12,6 +12,7 @@
 import { criarItem, aplicarEdicao, ErroValidacao, gerarId } from './modelos.js';
 import {
   carregarListas, salvarListas, carregarListaAtivaId, salvarListaAtivaId, excluirDadosDaLista,
+  carregarPastas, salvarPastas, carregarPastaAtivaId, salvarPastaAtivaId,
   carregarItens, salvarItens, carregarConfig, salvarConfig,
   carregarCategoriasPersonalizadas, salvarCategoriasPersonalizadas,
   carregarHistorico, salvarHistorico
@@ -28,6 +29,21 @@ function criarLoja() {
   var listaAtivaId = carregarListaAtivaId();
   if (!listas.some(function (l) { return l.id === listaAtivaId; })) {
     listaAtivaId = listas.length ? listas[0].id : null;
+  }
+
+  var pastas = carregarPastas();
+  var pastaAtivaId = carregarPastaAtivaId();
+  if (!pastas.some(function (p) { return p.id === pastaAtivaId; })) {
+    pastaAtivaId = pastas.length ? pastas[0].id : null;
+  }
+  // se a lista ativa não pertencer à pasta ativa (ex: dado antigo
+  // inconsistente), prioriza a pasta — troca pra primeira lista dela
+  if (listaAtivaId && pastaAtivaId) {
+    var listaAtivaAtual = listas.filter(function (l) { return l.id === listaAtivaId; })[0];
+    if (listaAtivaAtual && listaAtivaAtual.pastaId !== pastaAtivaId) {
+      var primeiraDaPasta = listas.filter(function (l) { return l.pastaId === pastaAtivaId; })[0];
+      listaAtivaId = primeiraDaPasta ? primeiraDaPasta.id : listaAtivaId;
+    }
   }
 
   var categoriasPersonalizadas = carregarCategoriasPersonalizadas();
@@ -53,6 +69,15 @@ function criarLoja() {
     return encontrada ? encontrada.nome : 'Minha Lista';
   }
 
+  function nomePastaAtiva() {
+    var encontrada = pastas.filter(function (p) { return p.id === pastaAtivaId; })[0];
+    return encontrada ? encontrada.nome : 'Minhas pastas';
+  }
+
+  function listasDaPastaAtiva() {
+    return listas.filter(function (l) { return l.pastaId === pastaAtivaId; });
+  }
+
   function carregarDadosDaListaAtiva() {
     if (!listaAtivaId) { itens = []; config = { orcamento: null, layoutAtual: [] }; return; }
     itens = carregarItens(listaAtivaId);
@@ -69,8 +94,35 @@ function criarLoja() {
     clearTimeout(temporizadorPublicacao);
     var idNoMomento = listaAtivaId;
     temporizadorPublicacao = setTimeout(function () {
+      temporizadorPublicacao = null;
       publicarLista(idNoMomento, { nome: nomeListaAtiva(), itens: itens, config: config });
     }, ATRASO_PUBLICACAO_MS);
+  }
+
+  /**
+   * Publica imediatamente uma alteração que ainda estava esperando o
+   * debounce de ATRASO_PUBLICACAO_MS — chamado quando a aba está
+   * prestes a sumir (trocar de app, fechar, ir pra segundo plano).
+   * Sem isso, uma edição feita e seguida de fechar a aba rápido demais
+   * nunca chegaria a ser publicada pros outros colaboradores (o
+   * dispositivo que editou continua com o dado certo no localStorage,
+   * só a sincronização remota que ficaria pra trás).
+   */
+  function flushPublicacaoPendente() {
+    if (!temporizadorPublicacao) return;
+    clearTimeout(temporizadorPublicacao);
+    temporizadorPublicacao = null;
+    if (aplicandoRemoto || !sincronizacaoDisponivel() || !listaAtivaId) return;
+    publicarLista(listaAtivaId, { nome: nomeListaAtiva(), itens: itens, config: config });
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') flushPublicacaoPendente();
+    });
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', flushPublicacaoPendente);
   }
 
   function sanearConfigRemota(configRemota) {
@@ -151,6 +203,10 @@ function criarLoja() {
         listas: listas,
         listaAtivaId: listaAtivaId,
         nomeListaAtiva: nomeListaAtiva(),
+        pastas: pastas,
+        pastaAtivaId: pastaAtivaId,
+        nomePastaAtiva: nomePastaAtiva(),
+        listasDaPastaAtiva: listasDaPastaAtiva(),
         categoriasPersonalizadas: categoriasPersonalizadas,
         sincronizando: sincronizacaoDisponivel()
       };
@@ -370,8 +426,9 @@ function criarLoja() {
     criarLista: function (nome) {
       var nomeLimpo = String(nome || '').trim();
       if (!nomeLimpo) { notificar({ tipo: 'erro', mensagem: 'Informe um nome para a lista.' }); return null; }
+      if (!pastaAtivaId) { notificar({ tipo: 'erro', mensagem: 'Nenhuma pasta selecionada.' }); return null; }
 
-      var nova = { id: gerarId(), nome: nomeLimpo, criadoEm: Date.now() };
+      var nova = { id: gerarId(), nome: nomeLimpo, pastaId: pastaAtivaId, criadoEm: Date.now() };
       var antes = listas;
       listas = listas.concat([nova]);
 
@@ -415,9 +472,12 @@ function criarLoja() {
     },
 
     excluirLista: function (id) {
-      if (listas.length <= 1) { notificar({ tipo: 'erro', mensagem: 'Não é possível excluir a única lista que resta.' }); return; }
+      var listaAlvo = listas.filter(function (l) { return l.id === id; })[0];
+      if (!listaAlvo) return;
 
-      var antes = listas;
+      var listasNaMesmaPasta = listas.filter(function (l) { return l.pastaId === listaAlvo.pastaId; });
+      if (listasNaMesmaPasta.length <= 1) { notificar({ tipo: 'erro', mensagem: 'Não é possível excluir a única lista desta pasta.' }); return; }
+
       var novaListaDeListas = listas.filter(function (l) { return l.id !== id; });
 
       if (!salvarListas(novaListaDeListas)) {
@@ -428,7 +488,10 @@ function criarLoja() {
       excluirDadosDaLista(id);
       notificar({ tipo: 'listas' });
 
-      if (id === listaAtivaId) api.alternarLista(listas[0].id);
+      if (id === listaAtivaId) {
+        var restantesNaPasta = listas.filter(function (l) { return l.pastaId === listaAlvo.pastaId; });
+        api.alternarLista(restantesNaPasta[0].id);
+      }
     },
 
     alternarLista: function (id) {
@@ -445,6 +508,94 @@ function criarLoja() {
       notificar({ tipo: 'lista-alternada' });
     },
 
+    /* ---------- Pastas ---------- */
+
+    criarPasta: function (nome) {
+      var nomeLimpo = String(nome || '').trim();
+      if (!nomeLimpo) { notificar({ tipo: 'erro', mensagem: 'Informe um nome para a pasta.' }); return null; }
+
+      var nova = { id: gerarId(), nome: nomeLimpo, criadoEm: Date.now() };
+      var antesPastas = pastas;
+      pastas = pastas.concat([nova]);
+
+      if (!salvarPastas(pastas)) {
+        pastas = antesPastas;
+        notificar({ tipo: 'erro', mensagem: 'Não foi possível criar a pasta.' });
+        return null;
+      }
+
+      // toda pasta nasce com uma lista dentro — nunca fica vazia,
+      // mesma garantia que "sempre existe ao menos uma lista" já tinha
+      var novaLista = { id: gerarId(), nome: 'Minha Lista', pastaId: nova.id, criadoEm: Date.now() };
+      var antesListas = listas;
+      listas = listas.concat([novaLista]);
+
+      if (!salvarListas(listas)) {
+        listas = antesListas;
+        pastas = antesPastas;
+        salvarPastas(antesPastas);
+        notificar({ tipo: 'erro', mensagem: 'Não foi possível criar a pasta.' });
+        return null;
+      }
+
+      notificar({ tipo: 'pastas' });
+      api.alternarPasta(nova.id);
+      return nova.id;
+    },
+
+    renomearPasta: function (id, novoNome) {
+      var nomeLimpo = String(novoNome || '').trim();
+      if (!nomeLimpo) return;
+
+      var antes = pastas;
+      pastas = pastas.map(function (p) { return p.id === id ? Object.assign({}, p, { nome: nomeLimpo }) : p; });
+
+      if (!salvarPastas(pastas)) {
+        pastas = antes;
+        notificar({ tipo: 'erro', mensagem: 'Não foi possível renomear a pasta.' });
+        return;
+      }
+      notificar({ tipo: 'pastas' });
+    },
+
+    /**
+     * Exclui a pasta e, em cascata, todas as listas que pertenciam só
+     * a ela (e os itens/config de cada uma). Não dá pra excluir a
+     * última pasta que resta — sempre precisa sobrar pelo menos uma,
+     * mesma lógica de "última lista" aplicada um nível acima.
+     */
+    excluirPasta: function (id) {
+      if (pastas.length <= 1) { notificar({ tipo: 'erro', mensagem: 'Não é possível excluir a única pasta que resta.' }); return; }
+
+      var novaListaDePastas = pastas.filter(function (p) { return p.id !== id; });
+      if (!salvarPastas(novaListaDePastas)) {
+        notificar({ tipo: 'erro', mensagem: 'Não foi possível excluir a pasta.' });
+        return;
+      }
+      pastas = novaListaDePastas;
+
+      var listasDaPasta = listas.filter(function (l) { return l.pastaId === id; });
+      listas = listas.filter(function (l) { return l.pastaId !== id; });
+      salvarListas(listas);
+      listasDaPasta.forEach(function (l) { excluirDadosDaLista(l.id); });
+
+      notificar({ tipo: 'pastas' });
+
+      if (id === pastaAtivaId) api.alternarPasta(pastas[0].id);
+    },
+
+    alternarPasta: function (id) {
+      if (id === pastaAtivaId) return;
+      if (!pastas.some(function (p) { return p.id === id; })) return;
+
+      pastaAtivaId = id;
+      salvarPastaAtivaId(id);
+      notificar({ tipo: 'pastas' });
+
+      var primeiraListaDaPasta = listas.filter(function (l) { return l.pastaId === id; })[0];
+      if (primeiraListaDaPasta) api.alternarLista(primeiraListaDaPasta.id);
+    },
+
     /**
      * Entra em uma lista recebida por link compartilhado. Se o
      * aparelho nunca ouviu falar dela, cria um registro local
@@ -453,7 +604,7 @@ function criarLoja() {
      */
     entrarEmListaCompartilhada: function (id) {
       if (!listas.some(function (l) { return l.id === id; })) {
-        listas = listas.concat([{ id: id, nome: 'Lista compartilhada', criadoEm: Date.now() }]);
+        listas = listas.concat([{ id: id, nome: 'Lista compartilhada', pastaId: pastaAtivaId, criadoEm: Date.now() }]);
         salvarListas(listas);
         notificar({ tipo: 'listas' });
       }

@@ -338,6 +338,53 @@ export function renderPainelCorredores(el, layoutAtual, todasCategorias, chavesP
  * @param {string} listaAtivaId
  * @param {{aoAlternar:Function, aoAbrirOpcoes:Function, aoCriarNova:Function}} acoes
  */
+/**
+ * Redesenha a tela de gerenciamento de pastas: cada pasta é uma
+ * linha com botão de ativar (o nome) + Renomear + Excluir — mesmo
+ * padrão usado nas listas, um nível acima na hierarquia.
+ * @param {HTMLElement} el
+ * @param {Array<{id:string,nome:string}>} pastas
+ * @param {string} pastaAtivaId
+ * @param {{aoAlternar:Function, aoRenomear:Function, aoExcluir:Function}} acoes
+ */
+export function renderPainelPastas(el, pastas, pastaAtivaId, acoes) {
+  el.textContent = '';
+  var ul = document.createElement('ul');
+  ul.className = 'pastas__lista';
+
+  pastas.forEach(function (pasta) {
+    var li = document.createElement('li');
+    li.className = 'pastas__item' + (pasta.id === pastaAtivaId ? ' pastas__item--ativa' : '');
+
+    var botaoAtivar = document.createElement('button');
+    botaoAtivar.type = 'button';
+    botaoAtivar.className = 'pastas__nome';
+    botaoAtivar.textContent = pasta.nome;
+    if (pasta.id === pastaAtivaId) botaoAtivar.setAttribute('aria-current', 'true');
+    botaoAtivar.addEventListener('click', function () { acoes.aoAlternar(pasta.id); });
+
+    var botaoRenomear = document.createElement('button');
+    botaoRenomear.type = 'button';
+    botaoRenomear.className = 'pastas__acao';
+    botaoRenomear.textContent = 'Renomear';
+    botaoRenomear.addEventListener('click', function () { acoes.aoRenomear(pasta.id, pasta.nome); });
+
+    var botaoExcluir = document.createElement('button');
+    botaoExcluir.type = 'button';
+    botaoExcluir.className = 'pastas__acao pastas__acao--excluir';
+    botaoExcluir.textContent = 'Excluir';
+    botaoExcluir.disabled = pastas.length <= 1;
+    botaoExcluir.addEventListener('click', function () { acoes.aoExcluir(pasta.id, pasta.nome); });
+
+    li.appendChild(botaoAtivar);
+    li.appendChild(botaoRenomear);
+    li.appendChild(botaoExcluir);
+    ul.appendChild(li);
+  });
+
+  el.appendChild(ul);
+}
+
 export function renderAbasDeListas(el, listas, listaAtivaId, acoes) {
   el.textContent = '';
 
