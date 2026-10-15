@@ -43,7 +43,7 @@ export function formatarTextoLista(nomeLista, pendentes, concluidos, todasCatego
 
 function linhaDoItem(item) {
   var texto = '- ' + formatarQuantidade(item.quantidade) + item.unidade + ' ' + item.nome;
-  if (item.precoUnitario != null) texto += ' (' + formatarMoeda(totalItem(item)) + ')';
+  if (item.precoInput != null) texto += ' (' + formatarMoeda(totalItem(item)) + ')';
   return texto;
 }
 

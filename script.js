@@ -7,7 +7,7 @@
    ========================================================= */
 
 import { loja } from './js/loja.js';
-import { totalCarrinho, statusOrcamento, saldoRestante } from './js/calculo.js';
+import { totalCarrinho, statusOrcamento, saldoRestante, rotuloDoPreco, tipoPrecoEfetivo, TIPO_PRECO } from './js/calculo.js';
 import { aplicarMascaraMoeda, valorNumericoMascarado, definirValorMascarado } from './js/mascara.js';
 import { criarConfirmador, criarPrompt } from './js/dialogo.js';
 import { formatarTextoLista, compartilharTexto } from './js/compartilhar.js';
@@ -19,7 +19,8 @@ import {
   renderPainelCorredores,
   renderPainelPastas,
   renderAbasDeListas,
-  renderSugestoes
+  renderSugestoes,
+  criarSeletorTipoPreco
 } from './js/render.js';
 import { tornarOrdenavel } from './js/ordenacao.js';
 import { NOME_APP, VERSAO_APP } from './js/identidade.js';
@@ -381,6 +382,23 @@ function mostrarToastInfo(mensagem) {
 
 /* ---------- Formulário de adição + autocompletar ---------- */
 
+// Tipo de preço (fechado x por kg/L): só aparece para g/ml/kg/L
+var linhaTipoPrecoEl = document.getElementById('linha-tipo-preco');
+var seletorTipoPreco = criarSeletorTipoPreco(TIPO_PRECO.FECHADO, campoUnidadeEl.value, atualizarCampoPrecoDoFormulario);
+seletorTipoPreco.el.id = 'seletor-tipo-preco';
+linhaTipoPrecoEl.appendChild(seletorTipoPreco.el);
+
+function atualizarCampoPrecoDoFormulario() {
+  var rotulo = rotuloDoPreco(campoUnidadeEl.value, seletorTipoPreco.obter());
+  campoPrecoEl.placeholder = rotulo;
+  campoPrecoEl.setAttribute('aria-label', rotulo);
+  seletorTipoPreco.definirUnidade(campoUnidadeEl.value);
+  linhaTipoPrecoEl.hidden = seletorTipoPreco.el.hidden;
+}
+campoUnidadeEl.addEventListener('change', atualizarCampoPrecoDoFormulario);
+atualizarCampoPrecoDoFormulario();
+
+
 formularioEl.addEventListener('submit', function (evento) {
   evento.preventDefault();
 
@@ -389,13 +407,16 @@ formularioEl.addEventListener('submit', function (evento) {
     quantidade: campoQuantidadeEl.value,
     unidade: campoUnidadeEl.value,
     categoriaChave: campoCategoriaEl.value,
-    precoUnitario: valorNumericoMascarado(campoPrecoEl)
+    tipoPreco: tipoPrecoEfetivo(campoUnidadeEl.value, seletorTipoPreco.obter()),
+    precoInput: valorNumericoMascarado(campoPrecoEl)
   });
 
   campoNomeEl.value = '';
   campoQuantidadeEl.value = '';
   definirValorMascarado(campoPrecoEl, null);
   campoUnidadeEl.value = 'un';
+  seletorTipoPreco.definir(TIPO_PRECO.FECHADO);
+  atualizarCampoPrecoDoFormulario();
   sugestoesEl.hidden = true;
   campoNomeEl.focus();
 });
@@ -405,6 +426,7 @@ campoNomeEl.addEventListener('input', function () {
   renderSugestoes(sugestoesEl, sugestoes, function (sugestao) {
     campoNomeEl.value = sugestao.nome;
     campoUnidadeEl.value = sugestao.unidade;
+    atualizarCampoPrecoDoFormulario();
     if (Array.prototype.some.call(campoCategoriaEl.options, function (o) { return o.value === sugestao.categoriaChave; })) {
       campoCategoriaEl.value = sugestao.categoriaChave;
     }

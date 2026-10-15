@@ -10,7 +10,10 @@
 
 import { nomeCategoria } from './categorias.js';
 import { UNIDADES } from './modelos.js';
-import { totalItem, formatarMoeda, formatarQuantidade } from './calculo.js';
+import {
+  totalItem, formatarMoeda, formatarQuantidade,
+  TIPO_PRECO, ehUnidadeDeMedida, rotuloDoPreco, baseDaUnidade, tipoPrecoEfetivo
+} from './calculo.js';
 import { aplicarMascaraMoeda, definirValorMascarado, valorNumericoMascarado } from './mascara.js';
 
 /**
@@ -59,7 +62,11 @@ export function criarLinhaItem(item, todasCategorias, acoes) {
   var detalheEl = document.createElement('span');
   detalheEl.className = 'item__detalhe';
   var partes = [formatarQuantidade(item.quantidade) + ' ' + item.unidade, nomeCategoria(item.categoriaChave, todasCategorias)];
-  if (item.precoUnitario != null) partes.push(formatarMoeda(totalItem(item)));
+  if (item.precoInput != null) {
+    var textoPreco = formatarMoeda(totalItem(item));
+    if (item.tipoPreco === TIPO_PRECO.POR_KG_L) textoPreco += ' (' + formatarMoeda(item.precoInput) + '/' + baseDaUnidade(item.unidade) + ')';
+    partes.push(textoPreco);
+  }
   detalheEl.textContent = partes.join(' · ');
 
   corpo.appendChild(nomeEl);
@@ -104,6 +111,61 @@ function criarCampoSelect(rotulo, opcoes, valorSelecionado, formatarOpcao) {
   return select;
 }
 
+/**
+ * Seletor de tipo de preço (só faz sentido para g/ml/kg/L):
+ * "Preço fechado" (valor digitado = total da embalagem/etiqueta) ou
+ * "Preço por kg/L" (proporcional à quantidade). Usado tanto no
+ * formulário de adicionar quanto no de editar.
+ * @param {string} tipoInicial
+ * @param {string} unidadeInicial
+ * @param {(tipo: string) => void} [aoMudar]
+ */
+export function criarSeletorTipoPreco(tipoInicial, unidadeInicial, aoMudar) {
+  var el = document.createElement('div');
+  el.className = 'seletor-preco';
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label', 'Tipo de preço');
+
+  var tipoAtual = TIPO_PRECO.FECHADO;
+  var botoes = {};
+
+  function criarBotao(tipo, texto) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'seletor-preco__opcao';
+    b.dataset.tipo = tipo;
+    b.textContent = texto;
+    b.addEventListener('click', function () { definir(tipo); if (aoMudar) aoMudar(tipo); });
+    botoes[tipo] = b;
+    el.appendChild(b);
+  }
+
+  function definir(tipo) {
+    tipoAtual = tipo === TIPO_PRECO.POR_KG_L ? TIPO_PRECO.POR_KG_L : TIPO_PRECO.FECHADO;
+    Object.keys(botoes).forEach(function (t) {
+      botoes[t].setAttribute('aria-pressed', t === tipoAtual ? 'true' : 'false');
+      botoes[t].classList.toggle('seletor-preco__opcao--ativa', t === tipoAtual);
+    });
+  }
+
+  function definirUnidade(unidade) {
+    el.hidden = !ehUnidadeDeMedida(unidade);
+    botoes[TIPO_PRECO.POR_KG_L].textContent = 'Preço por ' + baseDaUnidade(unidade);
+  }
+
+  criarBotao(TIPO_PRECO.FECHADO, 'Preço fechado');
+  criarBotao(TIPO_PRECO.POR_KG_L, 'Preço por kg');
+  definir(tipoInicial);
+  definirUnidade(unidadeInicial);
+
+  return {
+    el: el,
+    obter: function () { return tipoAtual; },
+    definir: definir,
+    definirUnidade: definirUnidade
+  };
+}
+
 function criarFormularioEdicao(item, todasCategorias, aoSalvar, aoCancelar) {
   var form = document.createElement('form');
   form.className = 'item__edicao';
@@ -130,11 +192,22 @@ function criarFormularioEdicao(item, todasCategorias, aoSalvar, aoCancelar) {
   var campoPreco = document.createElement('input');
   campoPreco.type = 'text';
   campoPreco.inputMode = 'decimal';
-  campoPreco.placeholder = 'Preço por unidade';
   campoPreco.className = 'item__edicao-campo item__edicao-campo--numero';
-  campoPreco.setAttribute('aria-label', 'Preço unitário estimado ou real');
   aplicarMascaraMoeda(campoPreco);
-  definirValorMascarado(campoPreco, item.precoUnitario);
+  definirValorMascarado(campoPreco, item.precoInput); // exatamente o que foi digitado
+
+  var seletorTipo = criarSeletorTipoPreco(item.tipoPreco, item.unidade, atualizarRotuloPreco);
+
+  function atualizarRotuloPreco() {
+    var rotulo = rotuloDoPreco(campoUnidade.value, seletorTipo.obter());
+    campoPreco.placeholder = rotulo;
+    campoPreco.setAttribute('aria-label', rotulo);
+  }
+  atualizarRotuloPreco();
+  campoUnidade.addEventListener('change', function () {
+    seletorTipo.definirUnidade(campoUnidade.value);
+    atualizarRotuloPreco();
+  });
 
   var linha0 = document.createElement('div');
   linha0.className = 'item__edicao-linha';
@@ -149,6 +222,10 @@ function criarFormularioEdicao(item, todasCategorias, aoSalvar, aoCancelar) {
   var linha2 = document.createElement('div');
   linha2.className = 'item__edicao-linha';
   linha2.appendChild(campoPreco);
+
+  var linhaTipo = document.createElement('div');
+  linhaTipo.className = 'item__edicao-linha';
+  linhaTipo.appendChild(seletorTipo.el);
 
   var acoesEl = document.createElement('div');
   acoesEl.className = 'item__edicao-acoes';
@@ -170,6 +247,7 @@ function criarFormularioEdicao(item, todasCategorias, aoSalvar, aoCancelar) {
   form.appendChild(linha0);
   form.appendChild(linha1);
   form.appendChild(linha2);
+  form.appendChild(linhaTipo);
   form.appendChild(acoesEl);
 
   form.addEventListener('submit', function (evento) {
@@ -179,7 +257,8 @@ function criarFormularioEdicao(item, todasCategorias, aoSalvar, aoCancelar) {
       quantidade: campoQtd.value,
       unidade: campoUnidade.value,
       categoriaChave: campoCategoria.value,
-      precoUnitario: valorNumericoMascarado(campoPreco)
+      tipoPreco: tipoPrecoEfetivo(campoUnidade.value, seletorTipo.obter()),
+      precoInput: valorNumericoMascarado(campoPreco)
     });
   });
 

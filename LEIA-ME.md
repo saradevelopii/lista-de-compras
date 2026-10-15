@@ -52,6 +52,7 @@ Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 - **Link compartilhável**: dentro de "Minhas Listas", o botão "Copiar link da lista atual" gera uma URL com o id da lista no hash (`#lista=...`). Quem abre esse link — com o Firebase configurado — vê e edita a mesma lista em tempo real.
 - **Sincronização em tempo real**: qualquer alteração (adicionar, editar, marcar, excluir) aparece nos outros aparelhos conectados à mesma lista, sem precisar recarregar.
 - **Fallback local**: sem Firebase configurado (ou sem internet), tudo continua funcionando normalmente, só local.
+- **Preço por tipo de embalagem (v1.4.0)**: `un`, `caixa` e `pacote` → total = quantidade × preço da embalagem. Para `g`, `ml`, `kg` e `L` aparece um seletor: **Preço fechado** (o valor digitado já é o total da etiqueta — ex: presunto 170 g a R$ 8,50, Coca 2 L a R$ 10,00) ou **Preço por kg/L** (proporcional: g→kg e ml→L automáticos — 400 g a R$ 50,00/kg = R$ 20,00). Ao editar, o preço e o tipo voltam exatamente como foram digitados. Editar quantidade/unidade/preço ou excluir recalcula na hora o total da lista e o saldo restante (e republica no Firebase). Itens antigos são migrados sem mudar nenhum valor.
 - **Quantidade e unidade**: campos separados (`un`, `kg`, `g`, `L`, `ml`, `caixa`, `pacote`). Sem quantidade informada, assume `1 un`.
 - **Corredores personalizados**: crie corredores próprios (ex: "Açougue do Bairro") na tela de Ordenação de Corredores — ficam disponíveis na hora, no cadastro e na edição de itens. Também dá pra renomear e excluir, igual às listas (os 9 corredores fixos do sistema não têm essas ações — são o padrão compartilhado).
 - **Edição completa**: toca no item para editar nome, quantidade, unidade, categoria e preço; salva no primeiro clique.
@@ -127,10 +128,10 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `qlista-v23`; na próxima mudança, use `qlista-v24`):
+Troque a versão no topo do `sw.js` (já está em `qlista-v28`; na próxima mudança, use `qlista-v29`) e a versão SemVer em `js/identidade.js` + `package.json`:
 
 ```js
-var VERSAO = 'qlista-v24';
+var VERSAO = 'qlista-v29';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.
@@ -139,6 +140,14 @@ Sem isso o navegador continua servindo a versão antiga do cache.
 
 **Local:** `localStorage`, chaveado por lista (`sacola:itens:<id>`, `sacola:config:<id>`), mais `sacola:listas` (metadados), `sacola:categorias-personalizadas` e `sacola:historico`. Sempre no aparelho, mesmo com o Firebase configurado — é o que garante o funcionamento offline.
 
-**Remoto (se configurado):** Firebase Realtime Database, em `listas/<id>` — nome, itens e config de cada lista, espelhando o que está salvo localmente.
+**Remoto (se configurado):** Firebase Realtime Database, em `listas/<id>` — `nome`, `config`, `resumo` (`total`, `orcamento`, `saldo`) e `itens`, cada item no formato:
+
+```json
+{"nome":"Presunto Fatiado","quantidade":170,"unidade":"g","categoria":"Frios","tipoPreco":"fechado","precoInput":8.5,"valorTotalCalculado":8.5,"comprado":false}
+```
+
+(mais `id`, `categoriaChave` e `criadoEm`, usados para a lista voltar idêntica do outro lado). `precoInput` é o valor exato digitado; `valorTotalCalculado` é o valor da linha que alimenta total e saldo — e é sempre recalculado ao ler, nunca confiado.
+
+**Offline e anti-perda:** o `enableIndexedDbPersistence` é uma API do *Firestore*; o SDK do Realtime Database não tem equivalente (o cache dele é só em memória). Por isso a camada durável é o `localStorage`, gravado ANTES de qualquer envio. Cada lista alterada fica registrada em `sacola:publicacoes-pendentes` até o Firebase confirmar; ao reabrir o app ou quando a internet volta (`online`), as pendentes são reenviadas. O app também pede `navigator.storage.persist()` para o navegador não limpar os dados por falta de espaço. Limite honesto: desinstalar o PWA *apagando os dados do site* remove o `localStorage` — o que já foi publicado continua no Firebase, mas sem login não há como o app descobrir os ids das listas depois disso (só reabrindo um link `#lista=...`).
 
 Quem já usava a versão anterior (lista única) é migrado automaticamente na primeira abertura desta versão — os itens e o orçamento viram a primeira lista, chamada "Minha Lista".

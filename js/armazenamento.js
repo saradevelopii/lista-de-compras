@@ -4,7 +4,7 @@
    e concentra a migração de versões antigas do formato salvo.
    ========================================================= */
 
-import { UNIDADES, gerarId } from './modelos.js';
+import { gerarId, normalizarItemBruto } from './modelos.js';
 import { sanearLayout } from './categorias.js';
 
 var CHAVE_LISTAS = 'sacola:listas';
@@ -13,6 +13,7 @@ var CHAVE_PASTAS = 'sacola:pastas';
 var CHAVE_PASTA_ATIVA = 'sacola:pasta-ativa';
 var CHAVE_CATEGORIAS_PERSONALIZADAS = 'sacola:categorias-personalizadas';
 var CHAVE_HISTORICO = 'sacola:historico';
+var CHAVE_PUBLICACOES_PENDENTES = 'sacola:publicacoes-pendentes';
 
 function chaveItens(listaId) { return 'sacola:itens:' + listaId; }
 function chaveConfig(listaId) { return 'sacola:config:' + listaId; }
@@ -178,31 +179,13 @@ export function salvarPastaAtivaId(id) {
 
 /* ---------- Itens e config de uma lista específica ---------- */
 
-function migrarItem(bruto) {
-  if (!bruto || typeof bruto !== 'object' || !bruto.nome) return null;
-
-  var quantidade = Number(bruto.quantidade);
-  var preco = Number(bruto.precoUnitario);
-
-  return {
-    id: typeof bruto.id === 'string' && bruto.id ? bruto.id : gerarId(),
-    nome: String(bruto.nome),
-    quantidade: Number.isFinite(quantidade) && quantidade > 0 ? quantidade : 1,
-    unidade: UNIDADES.indexOf(bruto.unidade) !== -1 ? bruto.unidade : 'un',
-    categoriaChave: typeof bruto.categoriaChave === 'string' && bruto.categoriaChave ? bruto.categoriaChave : 'outros',
-    precoUnitario: bruto.precoUnitario != null && Number.isFinite(preco) && preco >= 0 ? preco : null,
-    feito: Boolean(bruto.feito),
-    criadoEm: Number.isFinite(bruto.criadoEm) ? bruto.criadoEm : Date.now()
-  };
-}
-
 /** @param {string} listaId @returns {Item[]} */
 export function carregarItens(listaId) {
   try {
     var bruto = localStorage.getItem(chaveItens(listaId));
     var dados = bruto ? JSON.parse(bruto) : [];
     if (!Array.isArray(dados)) return [];
-    return dados.map(migrarItem).filter(Boolean);
+    return dados.map(normalizarItemBruto).filter(Boolean);
   } catch (erro) {
     console.warn('Não foi possível ler os itens da lista:', erro);
     return [];
@@ -292,6 +275,32 @@ export function salvarHistorico(historico) {
     return true;
   } catch (erro) {
     console.warn('Não foi possível salvar o histórico de produtos:', erro);
+    return false;
+  }
+}
+
+/* ---------- Publicações pendentes (offline) ---------- */
+// Ids das listas cuja última alteração ainda não chegou ao Firebase
+// (sem rede, SDK fora do ar...). O dado em si já está salvo nas chaves
+// da lista; aqui só guardamos "falta enviar", para o reenvio acontecer
+// quando a conexão voltar — inclusive depois de fechar e reabrir o app.
+
+export function carregarPublicacoesPendentes() {
+  try {
+    var bruto = localStorage.getItem(CHAVE_PUBLICACOES_PENDENTES);
+    var dados = bruto ? JSON.parse(bruto) : [];
+    return Array.isArray(dados) ? dados.filter(function (id) { return typeof id === 'string'; }) : [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export function salvarPublicacoesPendentes(ids) {
+  try {
+    localStorage.setItem(CHAVE_PUBLICACOES_PENDENTES, JSON.stringify(ids));
+    return true;
+  } catch (erro) {
+    console.warn('Não foi possível registrar as publicações pendentes:', erro);
     return false;
   }
 }

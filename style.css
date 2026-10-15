@@ -815,6 +815,42 @@ button, input, select {
   min-width: 5rem;
 }
 
+.barra__linha--tipo-preco[hidden] {
+  display: none;
+}
+
+.seletor-preco {
+  display: flex;
+  flex: 1 1 100%;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  background: var(--neve);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+}
+
+.seletor-preco[hidden] {
+  display: none;
+}
+
+.seletor-preco__opcao {
+  flex: 1 1 0;
+  padding: 0.45rem 0.5rem;
+  border: 0;
+  border-radius: calc(var(--raio) - 3px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.seletor-preco__opcao--ativa {
+  background: var(--azul-aba-ativa);
+  color: #fff;
+  font-weight: 600;
+}
+
 .barra__botao {
   flex: 0 0 auto;
   padding: 0.8rem 1.15rem;
