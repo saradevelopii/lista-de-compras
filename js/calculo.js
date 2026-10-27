@@ -125,3 +125,33 @@ export function formatarMoeda(valor) {
 export function formatarQuantidade(quantidade) {
   return Number.isInteger(quantidade) ? String(quantidade) : quantidade.toLocaleString('pt-BR');
 }
+
+/**
+ * Nome da unidade por extenso, no singular/plural conforme a quantidade.
+ * Plural quando a quantidade é maior que 1 ("1 litro", "0,5 litro",
+ * "1,5 litros", "2 litros"). Unidades-símbolo (kg, g, ml) não flexionam.
+ * @param {number} quantidade
+ * @param {string} unidade - chave interna: un, kg, g, L, ml, caixa, pacote
+ * @returns {string}
+ */
+export function rotuloDaUnidade(quantidade, unidade) {
+  var formas = {
+    un: ['unidade', 'unidades'],
+    L: ['litro', 'litros'],
+    caixa: ['caixa', 'caixas'],
+    pacote: ['pacote', 'pacotes']
+  };
+  var par = formas[unidade];
+  if (!par) return unidade; // kg, g, ml e qualquer valor inesperado ficam como estão
+  return quantidade > 1 ? par[1] : par[0];
+}
+
+/**
+ * "5 unidades", "1 litro", "400 g" — quantidade formatada + unidade flexionada.
+ * @param {number} quantidade
+ * @param {string} unidade
+ * @returns {string}
+ */
+export function formatarQuantidadeComUnidade(quantidade, unidade) {
+  return formatarQuantidade(quantidade) + ' ' + rotuloDaUnidade(quantidade, unidade);
+}

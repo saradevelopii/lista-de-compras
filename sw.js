@@ -4,7 +4,7 @@
    Troque a versão abaixo sempre que alterar algum arquivo.
    ========================================================= */
 
-var VERSAO = 'qlista-v28';
+var VERSAO = 'qlista-v29';
 
 var ARQUIVOS = [
   './',
@@ -38,8 +38,18 @@ var ARQUIVOS = [
 // pode derrubar o pré-cache dos arquivos próprios — o app inteiro não
 // deveria depender da disponibilidade de um domínio de terceiros.
 var ARQUIVOS_EXTERNOS = [
-  'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js'
+  'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js',
+  // SDK do Firebase (mesma versão de firebaseSync.js): sem isto, abrir o
+  // app sem rede deixava a sincronização morta até o próximo recarregamento
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js'
 ];
+
+// Módulos do SDK que o Firebase importa por dentro (nomes que não
+// conhecemos de antemão) são guardados na primeira vez que carregam.
+function ehModuloDoFirebase(url) {
+  return url.indexOf('https://www.gstatic.com/firebasejs/') === 0;
+}
 
 // Instalação: baixa e guarda todos os arquivos, e já assume o
 // controle sozinho assim que terminar (skipWaiting automático) —
@@ -101,7 +111,9 @@ self.addEventListener('fetch', function (evento) {
 
       return fetch(requisicao).then(function (daRede) {
         // Guarda cópias novas do mesmo domínio
-        if (daRede && daRede.status === 200 && daRede.type === 'basic') {
+        var guardavel = daRede && daRede.status === 200 &&
+          (daRede.type === 'basic' || (daRede.type === 'cors' && ehModuloDoFirebase(requisicao.url)));
+        if (guardavel) {
           var copia = daRede.clone();
           caches.open(VERSAO).then(function (cache) {
             cache.put(requisicao, copia);

@@ -11,7 +11,7 @@
 import { nomeCategoria } from './categorias.js';
 import { UNIDADES } from './modelos.js';
 import {
-  totalItem, formatarMoeda, formatarQuantidade,
+  totalItem, formatarMoeda, formatarQuantidadeComUnidade,
   TIPO_PRECO, ehUnidadeDeMedida, rotuloDoPreco, baseDaUnidade, tipoPrecoEfetivo
 } from './calculo.js';
 import { aplicarMascaraMoeda, definirValorMascarado, valorNumericoMascarado } from './mascara.js';
@@ -61,7 +61,7 @@ export function criarLinhaItem(item, todasCategorias, acoes) {
 
   var detalheEl = document.createElement('span');
   detalheEl.className = 'item__detalhe';
-  var partes = [formatarQuantidade(item.quantidade) + ' ' + item.unidade, nomeCategoria(item.categoriaChave, todasCategorias)];
+  var partes = [formatarQuantidadeComUnidade(item.quantidade, item.unidade), nomeCategoria(item.categoriaChave, todasCategorias)];
   if (item.precoInput != null) {
     var textoPreco = formatarMoeda(totalItem(item));
     if (item.tipoPreco === TIPO_PRECO.POR_KG_L) textoPreco += ' (' + formatarMoeda(item.precoInput) + '/' + baseDaUnidade(item.unidade) + ')';

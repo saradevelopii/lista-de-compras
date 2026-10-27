@@ -53,6 +53,8 @@ Cada módulo tem uma única responsabilidade e só conhece a camada abaixo dele:
 - **Sincronização em tempo real**: qualquer alteração (adicionar, editar, marcar, excluir) aparece nos outros aparelhos conectados à mesma lista, sem precisar recarregar.
 - **Fallback local**: sem Firebase configurado (ou sem internet), tudo continua funcionando normalmente, só local.
 - **Preço por tipo de embalagem (v1.4.0)**: `un`, `caixa` e `pacote` → total = quantidade × preço da embalagem. Para `g`, `ml`, `kg` e `L` aparece um seletor: **Preço fechado** (o valor digitado já é o total da etiqueta — ex: presunto 170 g a R$ 8,50, Coca 2 L a R$ 10,00) ou **Preço por kg/L** (proporcional: g→kg e ml→L automáticos — 400 g a R$ 50,00/kg = R$ 20,00). Ao editar, o preço e o tipo voltam exatamente como foram digitados. Editar quantidade/unidade/preço ou excluir recalcula na hora o total da lista e o saldo restante (e republica no Firebase). Itens antigos são migrados sem mudar nenhum valor.
+- **Sincronização que se religa sozinha (v1.4.1)**: ao voltar para o app (foco/aba visível), quando a internet volta ou quando uma assinatura falha, o app reenvia o que estava pendente, refaz a conexão com o Firebase e recria a assinatura da lista — o que baixa o valor atual do servidor. Se o SDK do Firebase não chegou a carregar (app aberto sem rede), o app se recarrega uma vez (só se você não estiver digitando) assim que a rede volta, porque o navegador não repete um `import()` que falhou. O SDK agora também fica no cache do Service Worker.
+- **Unidades no plural (v1.4.1)**: "1 unidade → 5 unidades", "1 litro → 2 litros", "1 caixa → 3 caixas", "1 pacote → 2 pacotes"; `kg`, `g` e `ml` não mudam. Plural a partir de quantidade > 1 (0,5 litro; 1,5 litros). Vale na lista e no texto compartilhado.
 - **Quantidade e unidade**: campos separados (`un`, `kg`, `g`, `L`, `ml`, `caixa`, `pacote`). Sem quantidade informada, assume `1 un`.
 - **Corredores personalizados**: crie corredores próprios (ex: "Açougue do Bairro") na tela de Ordenação de Corredores — ficam disponíveis na hora, no cadastro e na edição de itens. Também dá pra renomear e excluir, igual às listas (os 9 corredores fixos do sistema não têm essas ações — são o padrão compartilhado).
 - **Edição completa**: toca no item para editar nome, quantidade, unidade, categoria e preço; salva no primeiro clique.
@@ -128,10 +130,10 @@ Abre em `http://localhost:8000`. Sendo `localhost`, o Service Worker registra no
 
 ## Ao alterar qualquer arquivo
 
-Troque a versão no topo do `sw.js` (já está em `qlista-v28`; na próxima mudança, use `qlista-v29`) e a versão SemVer em `js/identidade.js` + `package.json`:
+Troque a versão no topo do `sw.js` (já está em `qlista-v29`; na próxima mudança, use `qlista-v30`) e a versão SemVer em `js/identidade.js` + `package.json`:
 
 ```js
-var VERSAO = 'qlista-v29';
+var VERSAO = 'qlista-v30';
 ```
 
 Sem isso o navegador continua servindo a versão antiga do cache.

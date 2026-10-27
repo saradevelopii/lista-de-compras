@@ -24,6 +24,16 @@ var VERSAO_SDK = '10.14.1';
 var appFirebase = null;
 var bancoFirebase = null;
 var carregamentoEmAndamento = null;
+// O navegador guarda o resultado de um import() que falhou: repetir a
+// MESMA URL continua falhando até a página ser recarregada. Por isso, uma
+// falha de carregamento do SDK marca esta flag e o app pede um recarregamento
+// seguro (ver loja.js/script.js) em vez de ficar tentando em vão.
+var carregamentoFalhouNestaPagina = false;
+
+/** @returns {boolean} true se o SDK não carregou e só um recarregamento resolve */
+export function precisaRecarregar() {
+  return carregamentoFalhouNestaPagina;
+}
 
 function configuracaoValida() {
   return !!(FIREBASE_CONFIG &&
@@ -40,6 +50,7 @@ export function disponivel() {
 
 function carregarSdk() {
   if (carregamentoEmAndamento) return carregamentoEmAndamento;
+  if (carregamentoFalhouNestaPagina) return Promise.reject(new Error('SDK do Firebase indisponível nesta página (recarregar)'));
 
   carregamentoEmAndamento = Promise.all([
     import(/* webpackIgnore: true */ 'https://www.gstatic.com/firebasejs/' + VERSAO_SDK + '/firebase-app.js'),
@@ -50,6 +61,10 @@ function carregarSdk() {
     appFirebase = appMod.initializeApp(FIREBASE_CONFIG);
     bancoFirebase = dbMod.getDatabase(appFirebase);
     return dbMod;
+  }).catch(function (erro) {
+    carregamentoEmAndamento = null;
+    carregamentoFalhouNestaPagina = true;
+    throw erro;
   });
 
   return carregamentoEmAndamento;
@@ -57,11 +72,15 @@ function carregarSdk() {
 
 /**
  * Assina as mudanças remotas de uma lista específica.
+ * `aoFalhar` é chamado quando a assinatura não pôde ser criada (SDK
+ * indisponível/sem rede) ou foi cancelada pelo servidor — quem chama
+ * decide quando tentar de novo (ver ressincronizar em loja.js).
  * @param {string} listaId
  * @param {(dados: object|null) => void} aoReceber
+ * @param {(erro: any) => void} [aoFalhar]
  * @returns {Promise<() => void>} função para cancelar a assinatura
  */
-export function assinarLista(listaId, aoReceber) {
+export function assinarLista(listaId, aoReceber, aoFalhar) {
   if (!configuracaoValida()) return Promise.resolve(function () {});
 
   return carregarSdk().then(function (dbMod) {
@@ -69,12 +88,29 @@ export function assinarLista(listaId, aoReceber) {
     return dbMod.onValue(referencia, function (snapshot) {
       aoReceber(snapshot.val());
     }, function (erro) {
-      console.warn('Sincronização em tempo real indisponível no momento:', erro);
+      console.warn('Sincronização em tempo real interrompida:', erro);
+      if (aoFalhar) aoFalhar(erro);
     });
   }).catch(function (erro) {
     console.warn('Não foi possível conectar ao Firebase — o app continua funcionando localmente:', erro);
+    if (aoFalhar) aoFalhar(erro);
     return function () {};
   });
+}
+
+/**
+ * Força a conexão (WebSocket) a ser refeita. Depois de dias em segundo
+ * plano, o navegador pode ter congelado/derrubado o socket sem o SDK
+ * perceber de imediato; ciclar offline→online obriga a reconectar e a
+ * baixar o valor atual. Sem efeito se o SDK ainda não foi carregado.
+ */
+export function reconectar() {
+  if (!configuracaoValida() || !bancoFirebase || !carregamentoEmAndamento) return Promise.resolve(false);
+  return carregamentoEmAndamento.then(function (dbMod) {
+    dbMod.goOffline(bancoFirebase);
+    dbMod.goOnline(bancoFirebase);
+    return true;
+  }).catch(function () { return false; });
 }
 
 /**

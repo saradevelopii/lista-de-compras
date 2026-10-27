@@ -5,7 +5,7 @@
    navegadores de desktop, por exemplo).
    ========================================================= */
 
-import { totalItem, formatarMoeda, formatarQuantidade } from './calculo.js';
+import { totalItem, formatarMoeda, formatarQuantidadeComUnidade } from './calculo.js';
 import { nomeCategoria } from './categorias.js';
 
 /**
@@ -42,7 +42,7 @@ export function formatarTextoLista(nomeLista, pendentes, concluidos, todasCatego
 }
 
 function linhaDoItem(item) {
-  var texto = '- ' + formatarQuantidade(item.quantidade) + item.unidade + ' ' + item.nome;
+  var texto = '- ' + formatarQuantidadeComUnidade(item.quantidade, item.unidade) + ' ' + item.nome;
   if (item.precoInput != null) texto += ' (' + formatarMoeda(totalItem(item)) + ')';
   return texto;
 }

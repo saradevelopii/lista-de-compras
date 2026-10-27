@@ -21,10 +21,11 @@ import {
 } from './armazenamento.js';
 import { ordenarPorCorredor, sanearLayout, combinarCategorias, gerarChaveCategoria, nomeCategoria } from './categorias.js';
 import { registrarUso, buscarSugestoes } from './historico.js';
-import { assinarLista, publicarLista, disponivel as sincronizacaoDisponivel } from './firebaseSync.js';
+import { assinarLista, publicarLista, reconectar, precisaRecarregar, disponivel as sincronizacaoDisponivel } from './firebaseSync.js';
 
 var DURACAO_UNDO_MS = 5000;
 var ATRASO_PUBLICACAO_MS = 400;
+var ESPERAS_REASSINATURA_MS = [2000, 5000, 15000, 30000];
 
 function criarLoja() {
   var listas = carregarListas();
@@ -58,6 +59,10 @@ function criarLoja() {
   var ouvintes = [];
   var cancelarAssinaturaRemota = null;
   var temporizadorPublicacao = null;
+  var geracaoAssinatura = 0;
+  var temporizadorReassinatura = null;
+  var tentativasReassinatura = 0;
+  var ultimaRessincronizacao = 0;
   var aplicandoRemoto = false; // evita re-publicar de volta o que acabou de chegar do Firebase
 
   function chavesCategoriasValidas() {
@@ -173,11 +178,14 @@ function criarLoja() {
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') flushPublicacaoPendente();
+      else ressincronizar(true); // voltou ao app (possivelmente após dias): refaz conexão + assinatura
     });
   }
   if (typeof window !== 'undefined') {
     window.addEventListener('pagehide', flushPublicacaoPendente);
-    window.addEventListener('online', function () { reenviarPublicacoesPendentes(); });
+    window.addEventListener('online', function () { ressincronizar(true); });
+    window.addEventListener('focus', function () { ressincronizar(false); });
+    window.addEventListener('pageshow', function (e) { if (e.persisted) ressincronizar(true); }); // volta do bfcache
   }
 
   function sanearConfigRemota(configRemota) {
@@ -189,14 +197,51 @@ function criarLoja() {
     };
   }
 
+  function agendarNovaTentativaDeAssinatura() {
+    if (temporizadorReassinatura || !sincronizacaoDisponivel()) return;
+    var espera = Math.min(ESPERAS_REASSINATURA_MS[tentativasReassinatura] || 60000, 60000);
+    tentativasReassinatura++;
+    temporizadorReassinatura = setTimeout(function () {
+      temporizadorReassinatura = null;
+      ressincronizar();
+    }, espera);
+  }
+
+  /**
+   * Refaz a ligação com o Firebase do zero: reenvia o que ficou pendente,
+   * recria a conexão e a assinatura da lista aberta (o que também baixa o
+   * valor atual do servidor). Chamado ao voltar para o app, quando a rede
+   * volta e quando uma assinatura falha. Idempotente e com trava curta
+   * para não disparar várias vezes em sequência (focus + visibilitychange).
+   */
+  function ressincronizar(forcarConexao) {
+    if (!sincronizacaoDisponivel() || !listaAtivaId) return;
+    if (precisaRecarregar()) {
+      // SDK não carregou (ex: app aberto sem rede) e o navegador não tenta
+      // de novo a mesma URL: com a rede de volta, só recarregar resolve.
+      if (typeof navigator === 'undefined' || navigator.onLine !== false) notificar({ tipo: 'recarregar-necessario' });
+      return;
+    }
+    var agora = Date.now();
+    if (!forcarConexao && agora - ultimaRessincronizacao < 1500) return;
+    ultimaRessincronizacao = agora;
+    clearTimeout(temporizadorReassinatura);
+    temporizadorReassinatura = null;
+
+    reenviarPublicacoesPendentes();   // antes de assinar: o SDK aplica a escrita local por cima do remoto
+    if (forcarConexao) reconectar();
+    assinarListaAtivaNoFirebase();
+  }
+
   function assinarListaAtivaNoFirebase() {
     if (cancelarAssinaturaRemota) { cancelarAssinaturaRemota(); cancelarAssinaturaRemota = null; }
     if (!listaAtivaId) return;
     var idNoMomento = listaAtivaId;
+    var geracao = ++geracaoAssinatura; // descarta respostas de assinaturas já substituídas
 
     assinarLista(idNoMomento, function (dadosRemotos) {
-      if (idNoMomento !== listaAtivaId) return; // a pessoa já trocou de lista antes disso chegar
-      if (carregarPublicacoesPendentes().indexOf(idNoMomento) !== -1) return; // alteração local ainda não enviada é mais nova que o remoto
+      if (idNoMomento !== listaAtivaId || geracao !== geracaoAssinatura) return;
+      tentativasReassinatura = 0; // chegou dado: a ligação está saudável // a pessoa já trocou de lista antes disso chegar
       if (!dadosRemotos) return; // nada publicado remotamente ainda — mantém o que já temos localmente
 
       aplicandoRemoto = true;
@@ -220,9 +265,11 @@ function criarLoja() {
       notificar({ tipo: 'itens' });
       notificar({ tipo: 'config' });
       aplicandoRemoto = false;
+    }, function () {
+      if (geracao === geracaoAssinatura) agendarNovaTentativaDeAssinatura();
     }).then(function (cancelar) {
-      if (idNoMomento === listaAtivaId) cancelarAssinaturaRemota = cancelar;
-      else cancelar(); // já trocou de lista enquanto a assinatura carregava
+      if (idNoMomento === listaAtivaId && geracao === geracaoAssinatura) cancelarAssinaturaRemota = cancelar;
+      else cancelar(); // já trocou de lista (ou foi reassinada) enquanto a assinatura carregava
     });
   }
 
@@ -259,8 +306,8 @@ function criarLoja() {
 
   carregarDadosDaListaAtiva();
   if (listaAtivaId) salvarListaAtivaId(listaAtivaId);
+  reenviarPublicacoesPendentes(); // antes de assinar: a escrita local pendente vence um remoto defasado
   assinarListaAtivaNoFirebase();
-  reenviarPublicacoesPendentes();
   pedirArmazenamentoPersistente();
 
   var api = {

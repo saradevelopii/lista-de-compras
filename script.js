@@ -616,8 +616,26 @@ toastDesfazerEl.addEventListener('click', function () {
 
 /* ---------- Reage a eventos do store ---------- */
 
+/**
+ * Recarregamento seguro para religar a sincronização (SDK que não carregou).
+ * Só acontece se a pessoa não estiver digitando nem editando, e no máximo
+ * uma vez a cada 2 minutos (evita laço de recarregamentos sem rede estável).
+ * Os dados já estão no localStorage, então nada se perde.
+ */
+function recarregarParaReligarSincronizacao() {
+  if (campoNomeEl.value !== '' || itemEmEdicaoId !== null || document.visibilityState !== 'visible') return;
+  try {
+    var ultimo = Number(sessionStorage.getItem('qlista:ultimo-recarregamento-sync') || 0);
+    if (Date.now() - ultimo < 120000) return;
+    sessionStorage.setItem('qlista:ultimo-recarregamento-sync', String(Date.now()));
+  } catch (erro) { return; }
+  location.reload();
+}
+
 loja.inscrever(function (evento) {
-  if (evento.tipo === 'itens' || evento.tipo === 'config') {
+  if (evento.tipo === 'recarregar-necessario') {
+    recarregarParaReligarSincronizacao();
+  } else if (evento.tipo === 'itens' || evento.tipo === 'config') {
     desenhar();
   } else if (evento.tipo === 'categorias') {
     desenharOpcoesCategoria();
