@@ -9,7 +9,7 @@
    volta ao snapshot anterior e um evento de erro é emitido.
    ========================================================= */
 
-import { criarItem, aplicarEdicao, normalizarItemBruto, itemParaRemoto, ErroValidacao, gerarId } from './modelos.js';
+import { criarItem, aplicarEdicao, normalizarItemBruto, itemParaRemoto, mesclarItensPorId, ErroValidacao, gerarId } from './modelos.js';
 import { totalCarrinho, saldoRestante } from './calculo.js';
 import {
   carregarListas, salvarListas, carregarListaAtivaId, salvarListaAtivaId, excluirDadosDaLista,
@@ -17,7 +17,8 @@ import {
   carregarItens, salvarItens, carregarConfig, salvarConfig,
   carregarCategoriasPersonalizadas, salvarCategoriasPersonalizadas,
   carregarHistorico, salvarHistorico,
-  carregarPublicacoesPendentes, salvarPublicacoesPendentes
+  carregarPublicacoesPendentes, salvarPublicacoesPendentes,
+  carregarListasSemeadas, salvarListasSemeadas
 } from './armazenamento.js';
 import { ordenarPorCorredor, sanearLayout, combinarCategorias, gerarChaveCategoria, nomeCategoria } from './categorias.js';
 import { registrarUso, buscarSugestoes } from './historico.js';
@@ -200,6 +201,19 @@ function criarLoja() {
     };
   }
 
+  function listaEstaPendente(id) {
+    return carregarPublicacoesPendentes().indexOf(id) !== -1;
+  }
+
+  function listaJaSemeada(id) {
+    return carregarListasSemeadas().indexOf(id) !== -1;
+  }
+
+  function marcarListaSemeada(id) {
+    var ids = carregarListasSemeadas();
+    if (ids.indexOf(id) === -1) salvarListasSemeadas(ids.concat([id]));
+  }
+
   function agendarNovaTentativaDeAssinatura() {
     if (temporizadorReassinatura || !sincronizacaoDisponivel()) return;
     var espera = Math.min(ESPERAS_REASSINATURA_MS[tentativasReassinatura] || 60000, 60000);
@@ -244,11 +258,37 @@ function criarLoja() {
 
     assinarLista(idNoMomento, function (dadosRemotos) {
       if (idNoMomento !== listaAtivaId || geracao !== geracaoAssinatura) return;
-      tentativasReassinatura = 0; // chegou dado: a ligação está saudável // a pessoa já trocou de lista antes disso chegar
-      if (!dadosRemotos) return; // nada publicado remotamente ainda — mantém o que já temos localmente
+      tentativasReassinatura = 0; // chegou dado: a ligação está saudável
+
+      // Regra de ouro: o que está só neste aparelho e ainda não foi confirmado pelo
+      // servidor NUNCA é sobrescrito por um remoto que pode estar defasado.
+      if (listaEstaPendente(idNoMomento)) { reenviarPublicacoesPendentes(); return; }
       // edição local ainda no intervalo de espera para publicar: aplicar o remoto agora apagaria
       // essa edição. Ela é publicada em instantes e o eco do servidor traz o estado completo.
       if (temporizadorPublicacao) return;
+
+      // Servidor sem nada desta lista, mas com itens aqui: é a lista que nasceu neste aparelho
+      // e nunca chegou ao servidor (publicações antigas falharam). Envia agora.
+      if (!dadosRemotos) {
+        if (itens.length > 0) publicarComRegistro(idNoMomento, montarDocumentoRemoto(nomeListaAtiva(), itens, config));
+        marcarListaSemeada(idNoMomento);
+        return;
+      }
+
+      // Primeira conciliação desta lista neste aparelho: junta (por id) o que existe aqui e lá,
+      // em vez de deixar um servidor defasado esvaziar a lista local — e publica o resultado.
+      if (!listaJaSemeada(idNoMomento)) {
+        marcarListaSemeada(idNoMomento);
+        if (itens.length > 0) {
+          var remotosParaMesclar = (Array.isArray(dadosRemotos.itens) ? dadosRemotos.itens : Object.values(dadosRemotos.itens || {}))
+            .map(normalizarItemBruto).filter(Boolean);
+          itens = mesclarItensPorId(itens, remotosParaMesclar);
+          salvarItens(idNoMomento, itens);
+          notificar({ tipo: 'itens' });
+          publicarComRegistro(idNoMomento, montarDocumentoRemoto(nomeListaAtiva(), itens, config));
+          return;
+        }
+      }
 
       aplicandoRemoto = true;
       try {
@@ -348,6 +388,17 @@ function criarLoja() {
 
     obterStatusSincronizacao: function () {
       return Object.assign({ habilitada: sincronizacaoDisponivel(), listaId: listaAtivaId }, obterStatusSync());
+    },
+
+    /**
+     * Envia AGORA a lista aberta ao servidor (sem esperar o intervalo de 0,4 s).
+     * Usado ao compartilhar: garante que quem abrir o link encontre a lista completa.
+     */
+    publicarListaAtiva: function () {
+      if (!sincronizacaoDisponivel() || !listaAtivaId) return Promise.resolve(false);
+      clearTimeout(temporizadorPublicacao);
+      temporizadorPublicacao = null;
+      return publicarComRegistro(listaAtivaId, montarDocumentoRemoto(nomeListaAtiva(), itens, config));
     },
 
     todasCategorias: function () { return combinarCategorias(categoriasPersonalizadas); },
@@ -739,6 +790,7 @@ function criarLoja() {
     entrarEmListaCompartilhada: function (id) {
       if (!listas.some(function (l) { return l.id === id; })) {
         listas = listas.concat([{ id: id, nome: 'Lista compartilhada', pastaId: pastaAtivaId, criadoEm: Date.now() }]);
+        marcarListaSemeada(id); // o conteúdo desta lista vem do servidor: nada local para "semear"
         salvarListas(listas);
         notificar({ tipo: 'listas' });
       }

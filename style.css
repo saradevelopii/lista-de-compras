@@ -1168,6 +1168,23 @@ button, input, select {
 
 .dialogo__caixa--menu a { color: var(--azul); }
 
+/* Estado da sincronização: uma informação por linha; textos longos (URLs de erro, IDs) quebram em vez de estourar a caixa */
+.dialogo__caixa--menu p.dialogo__sync {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: 0.85rem;
+}
+
+.dialogo__caixa--menu p.dialogo__sync--id {
+  margin-top: 0.5rem;
+}
+
+.dialogo__sync code {
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
 .dialogo__caixa--menu p.dialogo__versao {
   margin-top: 0.4rem;
   font-size: 0.8rem;

@@ -13,6 +13,7 @@ var CHAVE_PASTAS = 'sacola:pastas';
 var CHAVE_PASTA_ATIVA = 'sacola:pasta-ativa';
 var CHAVE_CATEGORIAS_PERSONALIZADAS = 'sacola:categorias-personalizadas';
 var CHAVE_HISTORICO = 'sacola:historico';
+var CHAVE_LISTAS_SEMEADAS = 'sacola:sync-semeadas';
 var CHAVE_PUBLICACOES_PENDENTES = 'sacola:publicacoes-pendentes';
 
 function chaveItens(listaId) { return 'sacola:itens:' + listaId; }
@@ -301,6 +302,31 @@ export function salvarPublicacoesPendentes(ids) {
     return true;
   } catch (erro) {
     console.warn('Não foi possível registrar as publicações pendentes:', erro);
+    return false;
+  }
+}
+
+/* ---------- Listas "semeadas" no Firebase ---------- */
+// Ids das listas cuja primeira conciliação com o servidor já aconteceu
+// neste aparelho. Antes dela, o conteúdo LOCAL (que pode estar à frente do
+// servidor, se publicações antigas falharam) é mesclado com o remoto e
+// republicado, em vez de ser sobrescrito pelo remoto.
+
+export function carregarListasSemeadas() {
+  try {
+    var bruto = localStorage.getItem(CHAVE_LISTAS_SEMEADAS);
+    var dados = bruto ? JSON.parse(bruto) : [];
+    return Array.isArray(dados) ? dados.filter(function (id) { return typeof id === 'string'; }) : [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export function salvarListasSemeadas(ids) {
+  try {
+    localStorage.setItem(CHAVE_LISTAS_SEMEADAS, JSON.stringify(ids));
+    return true;
+  } catch (erro) {
     return false;
   }
 }

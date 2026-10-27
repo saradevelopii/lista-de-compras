@@ -17,4 +17,4 @@
    ========================================================= */
 
 export var NOME_APP = 'Qlista';
-export var VERSAO_APP = '1.4.3';
+export var VERSAO_APP = '1.4.4';

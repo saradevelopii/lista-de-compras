@@ -213,6 +213,25 @@ export function itemParaRemoto(item, nomeDaCategoria) {
   };
 }
 
+/**
+ * União por id: itens locais primeiro (vencem em caso de conflito) e, depois,
+ * os remotos que o aparelho ainda não conhecia. Usada uma única vez por
+ * lista, na "semeadura" (ver loja.js), para nunca perder itens de nenhum lado.
+ * @param {Item[]} locais
+ * @param {Item[]} remotos
+ * @returns {Item[]}
+ */
+export function mesclarItensPorId(locais, remotos) {
+  var vistos = {};
+  var resultado = [];
+  locais.concat(remotos).forEach(function (item) {
+    if (!item || vistos[item.id]) return;
+    vistos[item.id] = true;
+    resultado.push(item);
+  });
+  return resultado;
+}
+
 export function gerarId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }

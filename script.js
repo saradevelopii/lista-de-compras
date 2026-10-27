@@ -558,6 +558,7 @@ opcaoCompartilharTextoEl.addEventListener('click', function () {
 
 opcaoLinkWhatsappEl.addEventListener('click', function () {
   fecharMenuCompartilhar();
+  loja.publicarListaAtiva(); // garante a lista completa no servidor antes de alguém abrir o link
   var estado = loja.obterEstado();
   var link = gerarLinkCompartilhavel(estado.listaAtivaId);
   var mensagem = 'Edite comigo a lista "' + estado.nomeListaAtiva + '": ' + link;
@@ -566,6 +567,7 @@ opcaoLinkWhatsappEl.addEventListener('click', function () {
 
 opcaoLinkCopiarEl.addEventListener('click', function () {
   fecharMenuCompartilhar();
+  loja.publicarListaAtiva(); // idem: envia a lista completa agora
   var link = gerarLinkCompartilhavel(loja.obterEstado().listaAtivaId);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(link).then(function () {
@@ -601,8 +603,8 @@ function desenharStatusSync() {
   partes.push(st.ultimaConfirmacao
     ? 'Última gravação confirmada às ' + new Date(st.ultimaConfirmacao).toLocaleTimeString('pt-BR')
     : 'Nenhuma gravação confirmada nesta sessão');
-  if (st.ultimoErro) partes.push('⚠️ Último erro — ' + st.ultimoErro);
-  menuSyncEstadoEl.textContent = partes.join(' · ');
+  if (st.ultimoErro) partes.push('⚠️ Último erro: ' + st.ultimoErro);
+  menuSyncEstadoEl.textContent = partes.join('\n');
 }
 desenharStatusSync();
 menuInstitucionalEl.setAttribute('aria-label', 'Sobre o ' + NOME_APP);

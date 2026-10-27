@@ -51,7 +51,7 @@ export function obterStatusSync() { return statusSync; }
 export function aoMudarStatusSync(fn) { ouvintesStatus.push(fn); }
 
 function descreverErro(erro) {
-  return String((erro && (erro.code || erro.message)) || erro || 'erro desconhecido').slice(0, 200);
+  return String((erro && (erro.code || erro.message)) || erro || 'erro desconhecido').slice(0, 140);
 }
 
 /** @returns {boolean} true se o SDK não carregou e só um recarregamento resolve */
