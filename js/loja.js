@@ -21,7 +21,8 @@ import {
 } from './armazenamento.js';
 import { ordenarPorCorredor, sanearLayout, combinarCategorias, gerarChaveCategoria, nomeCategoria } from './categorias.js';
 import { registrarUso, buscarSugestoes } from './historico.js';
-import { assinarLista, publicarLista, reconectar, precisaRecarregar, disponivel as sincronizacaoDisponivel } from './firebaseSync.js';
+import { VERSAO_APP } from './identidade.js';
+import { assinarLista, publicarLista, reconectar, precisaRecarregar, obterStatusSync, aoMudarStatusSync, disponivel as sincronizacaoDisponivel } from './firebaseSync.js';
 
 var DURACAO_UNDO_MS = 5000;
 var ATRASO_PUBLICACAO_MS = 400;
@@ -106,6 +107,8 @@ function criarLoja() {
     var total = totalCarrinho(itensDaLista);
     return {
       nome: nome,
+      atualizadoEm: Date.now(),   // diagnóstico: quando e por qual versão esta lista foi gravada
+      versaoApp: VERSAO_APP,
       itens: itensDaLista.map(function (item) { return itemParaRemoto(item, nomeCategoria(item.categoriaChave, todas)); }),
       config: configDaLista,
       resumo: {
@@ -243,28 +246,37 @@ function criarLoja() {
       if (idNoMomento !== listaAtivaId || geracao !== geracaoAssinatura) return;
       tentativasReassinatura = 0; // chegou dado: a ligação está saudável // a pessoa já trocou de lista antes disso chegar
       if (!dadosRemotos) return; // nada publicado remotamente ainda — mantém o que já temos localmente
+      // edição local ainda no intervalo de espera para publicar: aplicar o remoto agora apagaria
+      // essa edição. Ela é publicada em instantes e o eco do servidor traz o estado completo.
+      if (temporizadorPublicacao) return;
 
       aplicandoRemoto = true;
-      var itensRemotos = Array.isArray(dadosRemotos.itens) ? dadosRemotos.itens : Object.values(dadosRemotos.itens || {});
-      // normalizar recalcula valorTotalCalculado e aceita tanto o formato
-      // novo (comprado...) quanto listas publicadas por versões antigas
-      itens = itensRemotos.map(normalizarItemBruto).filter(Boolean);
-      config = sanearConfigRemota(dadosRemotos.config);
-      salvarItens(idNoMomento, itens);
-      salvarConfig(idNoMomento, config);
+      try {
+        var itensRemotos = Array.isArray(dadosRemotos.itens) ? dadosRemotos.itens : Object.values(dadosRemotos.itens || {});
+        // normalizar recalcula valorTotalCalculado e aceita tanto o formato
+        // novo (comprado...) quanto listas publicadas por versões antigas
+        itens = itensRemotos.map(normalizarItemBruto).filter(Boolean);
+        config = sanearConfigRemota(dadosRemotos.config);
+        salvarItens(idNoMomento, itens);
+        salvarConfig(idNoMomento, config);
 
-      if (dadosRemotos.nome) {
-        var nomeAtualLocal = nomeListaAtiva();
-        if (dadosRemotos.nome !== nomeAtualLocal) {
-          listas = listas.map(function (l) { return l.id === idNoMomento ? Object.assign({}, l, { nome: dadosRemotos.nome }) : l; });
-          salvarListas(listas);
-          notificar({ tipo: 'listas' });
+        if (dadosRemotos.nome) {
+          var nomeAtualLocal = nomeListaAtiva();
+          if (dadosRemotos.nome !== nomeAtualLocal) {
+            listas = listas.map(function (l) { return l.id === idNoMomento ? Object.assign({}, l, { nome: dadosRemotos.nome }) : l; });
+            salvarListas(listas);
+            notificar({ tipo: 'listas' });
+          }
         }
-      }
 
-      notificar({ tipo: 'itens' });
-      notificar({ tipo: 'config' });
-      aplicandoRemoto = false;
+        notificar({ tipo: 'itens' });
+        notificar({ tipo: 'config' });
+      } catch (erro) {
+        console.error('Falha ao aplicar a atualização remota da lista:', erro);
+      } finally {
+        // nunca deixa a trava ligada: se ficasse presa, este aparelho pararia de publicar para sempre
+        aplicandoRemoto = false;
+      }
     }, function () {
       if (geracao === geracaoAssinatura) agendarNovaTentativaDeAssinatura();
     }).then(function (cancelar) {
@@ -306,6 +318,7 @@ function criarLoja() {
 
   carregarDadosDaListaAtiva();
   if (listaAtivaId) salvarListaAtivaId(listaAtivaId);
+  aoMudarStatusSync(function () { notificar({ tipo: 'sync-status' }); });
   reenviarPublicacoesPendentes(); // antes de assinar: a escrita local pendente vence um remoto defasado
   assinarListaAtivaNoFirebase();
   pedirArmazenamentoPersistente();
@@ -331,6 +344,10 @@ function criarLoja() {
         categoriasPersonalizadas: categoriasPersonalizadas,
         sincronizando: sincronizacaoDisponivel()
       };
+    },
+
+    obterStatusSincronizacao: function () {
+      return Object.assign({ habilitada: sincronizacaoDisponivel(), listaId: listaAtivaId }, obterStatusSync());
     },
 
     todasCategorias: function () { return combinarCategorias(categoriasPersonalizadas); },

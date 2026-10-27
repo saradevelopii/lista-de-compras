@@ -583,6 +583,28 @@ opcaoLinkCopiarEl.addEventListener('click', function () {
 document.title = NOME_APP + ' — lista de compras';
 document.getElementById('menu-titulo-sobre').textContent = 'Sobre o ' + NOME_APP;
 document.getElementById('menu-versao-app').textContent = VERSAO_APP;
+
+/* ---------- Estado da sincronização (menu "Sobre") ---------- */
+
+var menuSyncEstadoEl = document.getElementById('menu-sync-estado');
+var menuSyncIdEl = document.getElementById('menu-sync-id');
+
+function desenharStatusSync() {
+  var st = loja.obterStatusSincronizacao();
+  menuSyncIdEl.textContent = st.listaId || '—';
+  if (!st.habilitada) {
+    menuSyncEstadoEl.textContent = 'Desligada: o Firebase não está configurado — a lista só existe neste aparelho.';
+    return;
+  }
+  var partes = [];
+  partes.push(st.conectado === true ? '🟢 Conectado ao servidor' : st.conectado === false ? '🔴 Sem conexão com o servidor' : '⚪ Conectando…');
+  partes.push(st.ultimaConfirmacao
+    ? 'Última gravação confirmada às ' + new Date(st.ultimaConfirmacao).toLocaleTimeString('pt-BR')
+    : 'Nenhuma gravação confirmada nesta sessão');
+  if (st.ultimoErro) partes.push('⚠️ Último erro — ' + st.ultimoErro);
+  menuSyncEstadoEl.textContent = partes.join(' · ');
+}
+desenharStatusSync();
 menuInstitucionalEl.setAttribute('aria-label', 'Sobre o ' + NOME_APP);
 
 /* ---------- Menu institucional ---------- */
@@ -635,6 +657,9 @@ function recarregarParaReligarSincronizacao() {
 loja.inscrever(function (evento) {
   if (evento.tipo === 'recarregar-necessario') {
     recarregarParaReligarSincronizacao();
+  } else if (evento.tipo === 'sync-status' || evento.tipo === 'lista-alternada') {
+    desenharStatusSync();
+    if (evento.tipo === 'lista-alternada') desenharAbasDeListas();
   } else if (evento.tipo === 'itens' || evento.tipo === 'config') {
     desenhar();
   } else if (evento.tipo === 'categorias') {
@@ -657,11 +682,23 @@ loja.inscrever(function (evento) {
 
 /* ---------- Entrar em lista compartilhada via link ---------- */
 
-var listaIdDaURL = obterListaIdDaURL();
-if (listaIdDaURL) {
-  loja.entrarEmListaCompartilhada(listaIdDaURL);
+/**
+ * Entra na lista indicada pelo link (#lista=ID), se houver. Roda ao abrir
+ * o app E quando o link é aberto com o app já em execução (hashchange /
+ * volta ao foco) — antes só rodava no carregamento, então abrir o link
+ * com o PWA já aberto não fazia nada.
+ */
+function processarLinkDaLista() {
+  var id = obterListaIdDaURL();
+  if (!id) return;
+  loja.entrarEmListaCompartilhada(id);
   limparListaIdDaURL();
+  irParaLista();
+  mostrarToastInfo('Você entrou na lista compartilhada.');
 }
+processarLinkDaLista();
+window.addEventListener('hashchange', processarLinkDaLista);
+window.addEventListener('pageshow', function (e) { if (e.persisted) processarLinkDaLista(); });
 
 desenharOpcoesCategoria();
 desenhar();

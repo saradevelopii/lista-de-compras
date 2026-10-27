@@ -4,7 +4,7 @@
    Troque a versão abaixo sempre que alterar algum arquivo.
    ========================================================= */
 
-var VERSAO = 'qlista-v29';
+var VERSAO = 'qlista-v31';
 
 var ARQUIVOS = [
   './',

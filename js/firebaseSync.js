@@ -30,6 +30,30 @@ var carregamentoEmAndamento = null;
 // seguro (ver loja.js/script.js) em vez de ficar tentando em vão.
 var carregamentoFalhouNestaPagina = false;
 
+/* ---------- Estado da sincronização (para diagnóstico visível no app) ---------- */
+
+var statusSync = {
+  conectado: null,          // true/false conforme o próprio Firebase informa (.info/connected); null = desconhecido
+  ultimaConfirmacao: null,  // epoch ms da última gravação CONFIRMADA pelo servidor
+  ultimoErro: null          // texto do último erro de gravação/assinatura, ou null
+};
+var ouvintesStatus = [];
+
+function atualizarStatus(parcial) {
+  statusSync = Object.assign({}, statusSync, parcial);
+  ouvintesStatus.forEach(function (fn) { fn(statusSync); });
+}
+
+/** @returns {{conectado: boolean|null, ultimaConfirmacao: number|null, ultimoErro: string|null}} */
+export function obterStatusSync() { return statusSync; }
+
+/** @param {(status: object) => void} fn */
+export function aoMudarStatusSync(fn) { ouvintesStatus.push(fn); }
+
+function descreverErro(erro) {
+  return String((erro && (erro.code || erro.message)) || erro || 'erro desconhecido').slice(0, 200);
+}
+
 /** @returns {boolean} true se o SDK não carregou e só um recarregamento resolve */
 export function precisaRecarregar() {
   return carregamentoFalhouNestaPagina;
@@ -60,6 +84,10 @@ function carregarSdk() {
     var dbMod = modulos[1];
     appFirebase = appMod.initializeApp(FIREBASE_CONFIG);
     bancoFirebase = dbMod.getDatabase(appFirebase);
+    // o próprio Firebase informa se o WebSocket está de pé
+    dbMod.onValue(dbMod.ref(bancoFirebase, '.info/connected'), function (snap) {
+      atualizarStatus({ conectado: snap.val() === true });
+    });
     return dbMod;
   }).catch(function (erro) {
     carregamentoEmAndamento = null;
@@ -89,10 +117,12 @@ export function assinarLista(listaId, aoReceber, aoFalhar) {
       aoReceber(snapshot.val());
     }, function (erro) {
       console.warn('Sincronização em tempo real interrompida:', erro);
+      atualizarStatus({ ultimoErro: 'Leitura: ' + descreverErro(erro) });
       if (aoFalhar) aoFalhar(erro);
     });
   }).catch(function (erro) {
     console.warn('Não foi possível conectar ao Firebase — o app continua funcionando localmente:', erro);
+    atualizarStatus({ ultimoErro: 'Conexão: ' + descreverErro(erro) });
     if (aoFalhar) aoFalhar(erro);
     return function () {};
   });
@@ -124,9 +154,13 @@ export function publicarLista(listaId, dados) {
 
   return carregarSdk().then(function (dbMod) {
     var referencia = dbMod.ref(bancoFirebase, 'listas/' + listaId);
-    return dbMod.set(referencia, dados).then(function () { return true; });
+    return dbMod.set(referencia, dados).then(function () {
+      atualizarStatus({ ultimaConfirmacao: Date.now(), ultimoErro: null });
+      return true;
+    });
   }).catch(function (erro) {
     console.warn('Não foi possível sincronizar com o Firebase — os dados continuam salvos localmente:', erro);
+    atualizarStatus({ ultimoErro: 'Gravação: ' + descreverErro(erro) });
     return false;
   });
 }
