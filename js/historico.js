@@ -1,22 +1,13 @@
-/* =========================================================
-   Histórico de produtos — funções puras que operam sobre o
-   objeto carregado/salvo por armazenamento.js. Cada entrada é
-   chaveada pelo nome normalizado (minúsculo, sem acento) do
-   produto, para que "Café" e "café" contem como o mesmo item.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// histórico de produtos pro autocompletar. a chave é o nome normalizado (minúsculo, sem
+// acento), então Café e café contam como o mesmo
 
 function normalizar(nome) {
   return String(nome || '').trim().toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
-/**
- * Registra (ou incrementa) o uso de um produto no histórico.
- * Imutável: retorna um novo objeto, não modifica o recebido.
- * @param {Object} historico
- * @param {{nome: string, categoriaChave: string, unidade: string}} item
- * @returns {Object}
- */
+// conta mais um uso do produto. devolve um objeto novo
 export function registrarUso(historico, item) {
   var chave = normalizar(item.nome);
   if (!chave) return historico;
@@ -24,7 +15,7 @@ export function registrarUso(historico, item) {
   var atual = historico[chave];
   var novo = Object.assign({}, historico);
   novo[chave] = {
-    nome: item.nome, // guarda a grafia mais recente (maiúsculas/acentos como o usuário digitou)
+    nome: item.nome, // guarda a grafia mais recente, do jeito que a pessoa digitou
     categoriaChave: item.categoriaChave,
     unidade: item.unidade,
     contagem: (atual ? atual.contagem : 0) + 1,
@@ -33,15 +24,7 @@ export function registrarUso(historico, item) {
   return novo;
 }
 
-/**
- * Busca sugestões que contenham o texto digitado, ordenadas por
- * frequência de uso (mais usado primeiro) e, em empate, pelo uso
- * mais recente.
- * @param {Object} historico
- * @param {string} textoDigitado
- * @param {number} [limite]
- * @returns {Array<{nome: string, categoriaChave: string, unidade: string, contagem: number}>}
- */
+// sugestões que contêm o texto, do mais usado pro menos; empate vai pelo uso mais recente
 export function buscarSugestoes(historico, textoDigitado, limite) {
   var termo = normalizar(textoDigitado);
   if (!termo) return [];

@@ -1,7 +1,5 @@
-/* =========================================================
-   Sacola — lista de compras
-   Tokens, mobile-first, Flexbox
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+/* qlista: estilos. mobile first, flexbox e tokens de cor */
 
 :root {
   --azul: #1B4E9B;
@@ -21,9 +19,10 @@
   --fonte: "Avenir Next", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* A tabela de cores acima não é alterada por nenhuma regra abaixo.
-   Estados de alerta usam os mesmos tokens (--vermelho, --limao)
-   em opacidades diferentes — nenhuma cor nova é introduzida. */
+/*
+   as cores da tabela acima não mudam em nenhuma regra abaixo; os alertas usam os mesmos
+   tokens (--vermelho, --limao) com outra opacidade
+ */
 
 * { box-sizing: border-box; }
 
@@ -59,7 +58,7 @@ button, input, select {
   white-space: nowrap;
 }
 
-/* ---------- Casca do app: ocupa a tela toda ---------- */
+/* --- casca do app --- */
 
 .app {
   display: flex;
@@ -71,7 +70,7 @@ button, input, select {
   background: var(--neve);
 }
 
-/* ---------- Cabeçalho ---------- */
+/* --- cabeçalho --- */
 
 .topo {
   padding: calc(1.3rem + env(safe-area-inset-top)) 1.25rem 1rem;
@@ -163,7 +162,7 @@ button, input, select {
   color: rgba(255, 255, 255, 0.78);
 }
 
-/* ---------- Painel financeiro ---------- */
+/* --- painel financeiro --- */
 
 .painel-financeiro {
   display: flex;
@@ -220,10 +219,10 @@ button, input, select {
   font-size: 0.78rem;
   font-weight: 700;
   width: fit-content;
-  /* estado neutro/ok: sem exibição (fica [hidden]) */
+  /* neutro e ok: não aparece (fica hidden) */
 }
 
-/* 90% do orçamento: aviso sutil, tom de vermelho em baixa opacidade */
+/* 90% do orçamento: aviso discreto, vermelho com pouca opacidade */
 .painel-financeiro[data-status="alerta"] {
   background: rgba(209, 56, 44, 0.16);
   border-color: rgba(209, 56, 44, 0.4);
@@ -233,7 +232,7 @@ button, input, select {
   color: var(--branco);
 }
 
-/* orçamento estourado: mesmo vermelho, opacidade mais alta */
+/* orçamento estourado: mesmo vermelho, opacidade maior */
 .painel-financeiro[data-status="estourado"] {
   background: rgba(209, 56, 44, 0.28);
   border-color: var(--vermelho);
@@ -243,7 +242,7 @@ button, input, select {
   color: var(--branco);
 }
 
-/* ---------- Tela de Ordenação de Corredores ---------- */
+/* --- tela de corredores --- */
 
 .tela-pastas {
   flex: 1 1 auto;
@@ -449,7 +448,7 @@ button, input, select {
   border-color: rgba(209, 56, 44, 0.35);
 }
 
-/* ---------- Área da lista: cresce e rola ---------- */
+/* --- área da lista (cresce e rola) --- */
 
 .conteudo {
   flex: 1 1 auto;
@@ -482,7 +481,7 @@ button, input, select {
   list-style: none;
 }
 
-/* Cabeçalho de corredor/categoria dentro da lista de pendentes */
+/* cabeçalho de corredor na lista de pendentes */
 .item-grupo {
   padding: 0.55rem 1.25rem 0.3rem;
   font-size: 0.78rem;
@@ -491,14 +490,14 @@ button, input, select {
   background: var(--neve);
 }
 
-/* Sublista de um corredor — é ela que fica arrastável */
+/* sublista do corredor, é ela que arrasta */
 .item-grupo-lista {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* ---------- Item ---------- */
+/* --- item --- */
 
 .item {
   display: flex;
@@ -542,7 +541,7 @@ button, input, select {
   cursor: pointer;
 }
 
-/* Corpo do item é um botão (abre edição), zerando estilos padrão de <button> */
+/* o corpo do item é um button (abre a edição), então zera o estilo padrão de button */
 .item__corpo {
   all: unset;
   flex: 1 1 auto;
@@ -592,7 +591,7 @@ button, input, select {
   padding: 0.3rem 0.2rem;
 }
 
-/* Item comprado: tachado + opacidade reduzida na linha inteira */
+/* item comprado: riscado e mais claro na linha toda */
 .item--feito {
   opacity: 0.6;
 }
@@ -610,7 +609,7 @@ button, input, select {
   text-decoration-thickness: 2px;
 }
 
-/* ---------- Edição inline do item ---------- */
+/* --- edição do item --- */
 
 .item--edicao {
   padding: 0.75rem 1.25rem;
@@ -685,7 +684,7 @@ button, input, select {
   cursor: pointer;
 }
 
-/* ---------- Seção de concluídos (accordion) ---------- */
+/* --- concluídos (acordeão) --- */
 
 .concluidos {
   margin-top: 0.5rem;
@@ -745,7 +744,7 @@ button, input, select {
 
 .lista--concluidos[hidden] { display: none; }
 
-/* ---------- Barra de adicionar, fixa na base ---------- */
+/* --- barra de adicionar, fixa embaixo --- */
 
 .barra {
   position: sticky;
@@ -866,11 +865,11 @@ button, input, select {
 .barra__botao:hover { background: var(--azul-fundo); }
 .barra__botao:active { transform: translateY(1px); }
 
-/* ---------- Banner de atualização disponível ---------- */
-/* Fica no fluxo normal, como primeiro filho de .app, antes do
-   cabeçalho — por isso NUNCA sobrepõe nada: ele só empurra o
-   resto do conteúdo pra baixo, como qualquer bloco novo na
-   página. Nada de position:fixed nem cálculo de altura em JS. */
+/* --- banner de atualização --- */
+/*
+   fica no fluxo normal, como primeiro filho de .app, então só empurra o conteúdo e nunca
+   sobrepõe. sem position fixed nem cálculo de altura em js
+ */
 
 .atualizacao {
   display: flex;
@@ -903,7 +902,7 @@ button, input, select {
   to { transform: rotate(360deg); }
 }
 
-/* ---------- Formulário de novo corredor ---------- */
+/* --- formulário de novo corredor --- */
 
 .corredor-novo {
   display: flex;
@@ -941,7 +940,7 @@ button, input, select {
   cursor: pointer;
 }
 
-/* ---------- Tela de Minhas Listas ---------- */
+/* --- minhas listas --- */
 
 .abas-listas {
   display: flex;
@@ -1013,7 +1012,7 @@ button, input, select {
 
 .acao-compartilhar--excluir .acao-compartilhar__titulo { color: var(--vermelho); }
 
-/* ---------- Autocompletar por frequência ---------- */
+/* --- autocompletar --- */
 
 .barra__campo-com-sugestoes {
   position: relative;
@@ -1056,7 +1055,7 @@ button, input, select {
 .sugestoes__item:last-child { border-bottom: 0; }
 .sugestoes__item:hover { background: var(--neve); }
 
-/* ---------- Diálogo de confirmação ---------- */
+/* --- diálogo de confirmação --- */
 
 .dialogo {
   position: fixed;
@@ -1168,7 +1167,10 @@ button, input, select {
 
 .dialogo__caixa--menu a { color: var(--azul); }
 
-/* Estado da sincronização: uma informação por linha; textos longos (URLs de erro, IDs) quebram em vez de estourar a caixa */
+/*
+   estado da sincronização: uma info por linha e texto longo (url de erro, id) quebra em vez
+   de estourar a caixa
+ */
 .dialogo__caixa--menu p.dialogo__sync {
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -1247,7 +1249,7 @@ button, input, select {
   cursor: pointer;
 }
 
-/* ---------- Toast / Snackbar ---------- */
+/* --- toast --- */
 
 .toast {
   position: fixed;
@@ -1293,7 +1295,7 @@ button, input, select {
 
 .toast__desfazer[hidden] { display: none; }
 
-/* ---------- Foco visível e acessibilidade ---------- */
+/* --- foco visível e acessibilidade --- */
 
 :focus-visible {
   outline: 3px solid var(--limao);
@@ -1304,7 +1306,7 @@ button, input, select {
   * { transition: none !important; animation: none !important; }
 }
 
-/* ---------- Telas maiores: cartão centralizado ---------- */
+/* --- telas maiores: cartão centralizado --- */
 
 @media (min-width: 600px) {
   body { padding: 2.5rem 1rem; }

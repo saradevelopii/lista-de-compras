@@ -1,13 +1,6 @@
-/* =========================================================
-   Store — única fonte de verdade do estado da aplicação.
-
-   Padrão: toda ação aplica a mudança em memória e notifica os
-   inscritos IMEDIATAMENTE (otimista); só depois tenta persistir
-   local e, se a sincronização estiver configurada, publicar no
-   Firebase (com um pequeno atraso, para não disparar uma escrita
-   remota a cada tecla). Se a gravação local falhar, o estado
-   volta ao snapshot anterior e um evento de erro é emitido.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// estado central do app. cada ação muda a memória e avisa a tela na hora; salvar e publicar no
+// firebase vem depois. se salvar no localStorage falhar, volta pro estado anterior
 
 import { criarItem, aplicarEdicao, normalizarItemBruto, itemParaRemoto, mesclarItensPorId, ErroValidacao, gerarId } from './modelos.js';
 import { totalCarrinho, saldoRestante } from './calculo.js';
@@ -41,8 +34,7 @@ function criarLoja() {
   if (!pastas.some(function (p) { return p.id === pastaAtivaId; })) {
     pastaAtivaId = pastas.length ? pastas[0].id : null;
   }
-  // se a lista ativa não pertencer à pasta ativa (ex: dado antigo
-  // inconsistente), prioriza a pasta — troca pra primeira lista dela
+  // lista ativa fora da pasta ativa (dado antigo): fica a pasta e abre a primeira lista dela
   if (listaAtivaId && pastaAtivaId) {
     var listaAtivaAtual = listas.filter(function (l) { return l.id === listaAtivaId; })[0];
     if (listaAtivaAtual && listaAtivaAtual.pastaId !== pastaAtivaId) {
@@ -65,7 +57,7 @@ function criarLoja() {
   var temporizadorReassinatura = null;
   var tentativasReassinatura = 0;
   var ultimaRessincronizacao = 0;
-  var aplicandoRemoto = false; // evita re-publicar de volta o que acabou de chegar do Firebase
+  var aplicandoRemoto = false; // não republica o que acabou de chegar do firebase
 
   function chavesCategoriasValidas() {
     return combinarCategorias(categoriasPersonalizadas).map(function (c) { return c.chave; });
@@ -98,17 +90,13 @@ function criarLoja() {
     salvarHistorico(historico);
   }
 
-  /**
-   * Documento publicado no Firebase. Itens no contrato do produto
-   * (nome, quantidade, unidade, categoria, tipoPreco, precoInput,
-   * valorTotalCalculado, comprado) e um resumo financeiro já calculado.
-   */
+  // formato que vai pro firebase: itens + resumo de total e saldo
   function montarDocumentoRemoto(nome, itensDaLista, configDaLista) {
     var todas = combinarCategorias(categoriasPersonalizadas);
     var total = totalCarrinho(itensDaLista);
     return {
       nome: nome,
-      atualizadoEm: Date.now(),   // diagnóstico: quando e por qual versão esta lista foi gravada
+      atualizadoEm: Date.now(),   // pra saber depois quando e por qual versão foi gravado
       versaoApp: VERSAO_APP,
       itens: itensDaLista.map(function (item) { return itemParaRemoto(item, nomeCategoria(item.categoriaChave, todas)); }),
       config: configDaLista,
@@ -120,15 +108,10 @@ function criarLoja() {
     };
   }
 
-  /**
-   * Publica deixando a lista marcada como pendente até o servidor
-   * confirmar. O dado nunca se perde: ele já está no localStorage
-   * antes de qualquer tentativa remota.
-   */
+  // publica e mantém a lista como pendente até o servidor confirmar
   function publicarComRegistro(idDaLista, documento) {
-    // Marca ANTES de enviar: offline, o set() do Realtime Database não falha —
-    // fica esperando a conexão — e se o app fosse fechado nesse meio-tempo a
-    // pendência se perderia. A marca só sai quando o servidor confirma.
+    // marca antes de enviar: offline o set() não falha, só fica esperando conexão, e se o app
+    // fechar nesse meio tempo a pendência se perderia
     var pendentes = carregarPublicacoesPendentes();
     if (pendentes.indexOf(idDaLista) === -1) salvarPublicacoesPendentes(pendentes.concat([idDaLista]));
     return publicarLista(idDaLista, documento).then(function (ok) {
@@ -137,12 +120,12 @@ function criarLoja() {
     });
   }
 
-  /** Reenvia, do que está salvo localmente, as listas que ficaram sem publicar. */
+  // reenvia o que ficou sem publicar
   function reenviarPublicacoesPendentes() {
     if (!sincronizacaoDisponivel()) return;
     carregarPublicacoesPendentes().forEach(function (id) {
       var lista = listas.filter(function (l) { return l.id === id; })[0];
-      if (!lista) { // lista foi excluída enquanto estava pendente
+      if (!lista) { // lista apagada enquanto estava pendente
         salvarPublicacoesPendentes(carregarPublicacoesPendentes().filter(function (x) { return x !== id; }));
         return;
       }
@@ -162,15 +145,8 @@ function criarLoja() {
     }, ATRASO_PUBLICACAO_MS);
   }
 
-  /**
-   * Publica imediatamente uma alteração que ainda estava esperando o
-   * debounce de ATRASO_PUBLICACAO_MS — chamado quando a aba está
-   * prestes a sumir (trocar de app, fechar, ir pra segundo plano).
-   * Sem isso, uma edição feita e seguida de fechar a aba rápido demais
-   * nunca chegaria a ser publicada pros outros colaboradores (o
-   * dispositivo que editou continua com o dado certo no localStorage,
-   * só a sincronização remota que ficaria pra trás).
-   */
+  // manda já o que ainda estava esperando o debounce. usado ao fechar ou trocar de app, senão a
+  // última edição não chega nos outros aparelhos
   function flushPublicacaoPendente() {
     if (!temporizadorPublicacao) return;
     clearTimeout(temporizadorPublicacao);
@@ -182,14 +158,14 @@ function criarLoja() {
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') flushPublicacaoPendente();
-      else ressincronizar(true); // voltou ao app (possivelmente após dias): refaz conexão + assinatura
+      else ressincronizar(true); // voltou pro app, pode ter ficado dias fora
     });
   }
   if (typeof window !== 'undefined') {
     window.addEventListener('pagehide', flushPublicacaoPendente);
     window.addEventListener('online', function () { ressincronizar(true); });
     window.addEventListener('focus', function () { ressincronizar(false); });
-    window.addEventListener('pageshow', function (e) { if (e.persisted) ressincronizar(true); }); // volta do bfcache
+    window.addEventListener('pageshow', function (e) { if (e.persisted) ressincronizar(true); }); // voltou do bfcache
   }
 
   function sanearConfigRemota(configRemota) {
@@ -224,18 +200,13 @@ function criarLoja() {
     }, espera);
   }
 
-  /**
-   * Refaz a ligação com o Firebase do zero: reenvia o que ficou pendente,
-   * recria a conexão e a assinatura da lista aberta (o que também baixa o
-   * valor atual do servidor). Chamado ao voltar para o app, quando a rede
-   * volta e quando uma assinatura falha. Idempotente e com trava curta
-   * para não disparar várias vezes em sequência (focus + visibilitychange).
-   */
+  // refaz a ligação: reenvia pendências, reconecta e reassina a lista aberta (isso baixa o
+  // valor atual). roda no foco, quando a rede volta e quando a assinatura cai
   function ressincronizar(forcarConexao) {
     if (!sincronizacaoDisponivel() || !listaAtivaId) return;
     if (precisaRecarregar()) {
-      // SDK não carregou (ex: app aberto sem rede) e o navegador não tenta
-      // de novo a mesma URL: com a rede de volta, só recarregar resolve.
+      // o sdk não carregou (abriu sem rede) e o navegador não repete o mesmo import, então com
+      // rede só recarregando
       if (typeof navigator === 'undefined' || navigator.onLine !== false) notificar({ tipo: 'recarregar-necessario' });
       return;
     }
@@ -245,7 +216,7 @@ function criarLoja() {
     clearTimeout(temporizadorReassinatura);
     temporizadorReassinatura = null;
 
-    reenviarPublicacoesPendentes();   // antes de assinar: o SDK aplica a escrita local por cima do remoto
+    reenviarPublicacoesPendentes();   // antes de assinar, pra escrita local ficar por cima do remoto
     if (forcarConexao) reconectar();
     assinarListaAtivaNoFirebase();
   }
@@ -254,29 +225,28 @@ function criarLoja() {
     if (cancelarAssinaturaRemota) { cancelarAssinaturaRemota(); cancelarAssinaturaRemota = null; }
     if (!listaAtivaId) return;
     var idNoMomento = listaAtivaId;
-    var geracao = ++geracaoAssinatura; // descarta respostas de assinaturas já substituídas
+    var geracao = ++geracaoAssinatura; // ignora resposta de assinatura antiga
 
     assinarLista(idNoMomento, function (dadosRemotos) {
       if (idNoMomento !== listaAtivaId || geracao !== geracaoAssinatura) return;
-      tentativasReassinatura = 0; // chegou dado: a ligação está saudável
+      tentativasReassinatura = 0; // chegou dado, a conexão está ok
 
-      // Regra de ouro: o que está só neste aparelho e ainda não foi confirmado pelo
-      // servidor NUNCA é sobrescrito por um remoto que pode estar defasado.
+      // o que só existe aqui e ainda não foi confirmado nunca é sobrescrito por um remoto
+      // defasado
       if (listaEstaPendente(idNoMomento)) { reenviarPublicacoesPendentes(); return; }
-      // edição local ainda no intervalo de espera para publicar: aplicar o remoto agora apagaria
-      // essa edição. Ela é publicada em instantes e o eco do servidor traz o estado completo.
+      // edição local ainda esperando o debounce: aplicar o remoto agora apagaria ela. ela sai
+      // em instantes e o eco do servidor traz tudo
       if (temporizadorPublicacao) return;
 
-      // Servidor sem nada desta lista, mas com itens aqui: é a lista que nasceu neste aparelho
-      // e nunca chegou ao servidor (publicações antigas falharam). Envia agora.
+      // servidor vazio e itens aqui: a lista nasceu neste aparelho e nunca subiu, então envia
       if (!dadosRemotos) {
         if (itens.length > 0) publicarComRegistro(idNoMomento, montarDocumentoRemoto(nomeListaAtiva(), itens, config));
         marcarListaSemeada(idNoMomento);
         return;
       }
 
-      // Primeira conciliação desta lista neste aparelho: junta (por id) o que existe aqui e lá,
-      // em vez de deixar um servidor defasado esvaziar a lista local — e publica o resultado.
+      // primeira vez que esta lista fala com o servidor neste aparelho: junta por id o que tem
+      // aqui e lá e publica o resultado
       if (!listaJaSemeada(idNoMomento)) {
         marcarListaSemeada(idNoMomento);
         if (itens.length > 0) {
@@ -293,8 +263,8 @@ function criarLoja() {
       aplicandoRemoto = true;
       try {
         var itensRemotos = Array.isArray(dadosRemotos.itens) ? dadosRemotos.itens : Object.values(dadosRemotos.itens || {});
-        // normalizar recalcula valorTotalCalculado e aceita tanto o formato
-        // novo (comprado...) quanto listas publicadas por versões antigas
+        // o normalizar recalcula o total e entende tanto o formato novo quanto o de versões
+        // antigas
         itens = itensRemotos.map(normalizarItemBruto).filter(Boolean);
         config = sanearConfigRemota(dadosRemotos.config);
         salvarItens(idNoMomento, itens);
@@ -314,28 +284,24 @@ function criarLoja() {
       } catch (erro) {
         console.error('Falha ao aplicar a atualização remota da lista:', erro);
       } finally {
-        // nunca deixa a trava ligada: se ficasse presa, este aparelho pararia de publicar para sempre
+        // sempre solta a trava, senão o aparelho para de publicar
         aplicandoRemoto = false;
       }
     }, function () {
       if (geracao === geracaoAssinatura) agendarNovaTentativaDeAssinatura();
     }).then(function (cancelar) {
       if (idNoMomento === listaAtivaId && geracao === geracaoAssinatura) cancelarAssinaturaRemota = cancelar;
-      else cancelar(); // já trocou de lista (ou foi reassinada) enquanto a assinatura carregava
+      else cancelar(); // trocou de lista (ou reassinou) enquanto carregava
     });
   }
 
-  /**
-   * Pede ao navegador para NÃO apagar os dados do app por falta de espaço
-   * (o PWA instalado costuma receber, mas a permissão evita limpezas
-   * automáticas do localStorage). Best-effort e silencioso.
-   */
+  // pede pro navegador não apagar os dados do app quando faltar espaço
   function pedirArmazenamentoPersistente() {
     try {
       if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
         navigator.storage.persist();
       }
-    } catch (erro) { /* sem suporte: segue só com o armazenamento padrão */ }
+    } catch (erro) { /* sem suporte, segue normal */ }
   }
 
   function persistirItensOuReverter(itensAntes) {
@@ -359,7 +325,7 @@ function criarLoja() {
   carregarDadosDaListaAtiva();
   if (listaAtivaId) salvarListaAtivaId(listaAtivaId);
   aoMudarStatusSync(function () { notificar({ tipo: 'sync-status' }); });
-  reenviarPublicacoesPendentes(); // antes de assinar: a escrita local pendente vence um remoto defasado
+  reenviarPublicacoesPendentes(); // antes de assinar, pra pendência local ganhar do remoto
   assinarListaAtivaNoFirebase();
   pedirArmazenamentoPersistente();
 
@@ -390,10 +356,8 @@ function criarLoja() {
       return Object.assign({ habilitada: sincronizacaoDisponivel(), listaId: listaAtivaId }, obterStatusSync());
     },
 
-    /**
-     * Envia AGORA a lista aberta ao servidor (sem esperar o intervalo de 0,4 s).
-     * Usado ao compartilhar: garante que quem abrir o link encontre a lista completa.
-     */
+    // publica agora, sem esperar o debounce. usado ao compartilhar, pro link já abrir a lista
+    // completa
     publicarListaAtiva: function () {
       if (!sincronizacaoDisponivel() || !listaAtivaId) return Promise.resolve(false);
       clearTimeout(temporizadorPublicacao);
@@ -410,7 +374,7 @@ function criarLoja() {
       return itens.filter(function (i) { return i.feito; }).sort(function (a, b) { return a.criadoEm - b.criadoEm; });
     },
 
-    /* ---------- Itens ---------- */
+    // --- itens ---
 
     adicionarItem: function (dados) {
       var novoItem;
@@ -484,7 +448,7 @@ function criarLoja() {
       persistirItensOuReverter(antes);
     },
 
-    /* ---------- Orçamento e corredores ---------- */
+    // --- orçamento e corredores ---
 
     definirOrcamento: function (valorReais) {
       var antes = config;
@@ -502,18 +466,9 @@ function criarLoja() {
       persistirConfigOuReverter(antes);
     },
 
-    /**
-     * Aplica a nova ordem manual dos itens PENDENTES de uma mesma
-     * categoria (arrastar e soltar). Reaproveita o próprio campo
-     * criadoEm como número de ordem — não precisa de um campo novo:
-     * os itens dessa categoria recebem valores sequenciais a partir
-     * do menor criadoEm que já existia entre eles, então a ordenação
-     * por corredor (que já desempata por criadoEm) passa a refletir
-     * a posição escolhida a dedo. Itens de outras categorias, e os
-     * já concluídos, não são tocados.
-     * @param {string} categoriaChave
-     * @param {string[]} novaOrdemDeIds
-     */
+    // reordena (arrastar e soltar) os itens pendentes de uma categoria. reaproveita o criadoEm
+    // como ordem: os itens da categoria recebem valores em sequência a partir do menor criadoEm
+    // que já tinham. outras categorias e concluídos não mudam
     reordenarItensDaCategoria: function (categoriaChave, novaOrdemDeIds) {
       var antes = itens;
       var posicao = {};
@@ -577,19 +532,12 @@ function criarLoja() {
       notificar({ tipo: 'categorias' });
     },
 
-    /**
-     * Só corredores personalizados podem ser excluídos — os fixos são
-     * o padrão compartilhado do sistema. Itens que já usavam o corredor
-     * excluído não são reclassificados à força: continuam existindo
-     * normalmente e, como a chave deles deixa de aparecer na lista de
-     * categorias válidas, passam a ser exibidos como "Outros" e ordenados
-     * ao final — o mesmo tratamento que qualquer categoria desconhecida
-     * já recebe em ordenarPorCorredor/nomeCategoria.
-     */
+    // só corredor personalizado pode ser excluído. itens que usavam ele continuam existindo e
+    // aparecem em Outros, no fim da lista
     excluirCategoriaPersonalizada: function (chave) {
       var antes = categoriasPersonalizadas;
       var nova = categoriasPersonalizadas.filter(function (c) { return c.chave !== chave; });
-      if (nova.length === antes.length) return; // não é um corredor personalizado — nada a fazer
+      if (nova.length === antes.length) return; // não é personalizado, nada a fazer
 
       if (!salvarCategoriasPersonalizadas(nova)) {
         notificar({ tipo: 'erro', mensagem: 'Não foi possível excluir o corredor.' });
@@ -604,13 +552,13 @@ function criarLoja() {
       notificar({ tipo: 'categorias' });
     },
 
-    /* ---------- Histórico / autocompletar ---------- */
+    // --- histórico e autocompletar ---
 
     buscarSugestoesDeProduto: function (texto) {
       return buscarSugestoes(historico, texto, 6);
     },
 
-    /* ---------- Múltiplas listas ---------- */
+    // --- listas ---
 
     criarLista: function (nome) {
       var nomeLimpo = String(nome || '').trim();
@@ -649,9 +597,8 @@ function criarLoja() {
       if (id === listaAtivaId) {
         agendarPublicacaoRemota();
       } else if (sincronizacaoDisponivel()) {
-        // a lista renomeada não é a que está aberta agora — os itens/config
-        // dela não estão em memória, então lemos do que já está salvo
-        // localmente pra montar a publicação sem sobrescrever nada
+        // a lista renomeada não é a aberta, então itens e config vêm do que está salvo (não
+        // estão em memória)
         publicarComRegistro(id, montarDocumentoRemoto(nomeLimpo, carregarItens(id), carregarConfig(id, chavesCategoriasValidas())));
       }
     },
@@ -693,7 +640,7 @@ function criarLoja() {
       notificar({ tipo: 'lista-alternada' });
     },
 
-    /* ---------- Pastas ---------- */
+    // --- pastas ---
 
     criarPasta: function (nome) {
       var nomeLimpo = String(nome || '').trim();
@@ -709,8 +656,7 @@ function criarLoja() {
         return null;
       }
 
-      // toda pasta nasce com uma lista dentro — nunca fica vazia,
-      // mesma garantia que "sempre existe ao menos uma lista" já tinha
+      // toda pasta nasce com uma lista, nunca fica vazia
       var novaLista = { id: gerarId(), nome: 'Minha Lista', pastaId: nova.id, criadoEm: Date.now() };
       var antesListas = listas;
       listas = listas.concat([novaLista]);
@@ -743,12 +689,8 @@ function criarLoja() {
       notificar({ tipo: 'pastas' });
     },
 
-    /**
-     * Exclui a pasta e, em cascata, todas as listas que pertenciam só
-     * a ela (e os itens/config de cada uma). Não dá pra excluir a
-     * última pasta que resta — sempre precisa sobrar pelo menos uma,
-     * mesma lógica de "última lista" aplicada um nível acima.
-     */
+    // apaga a pasta e as listas dela (itens e config junto). a última pasta não pode ser
+    // apagada
     excluirPasta: function (id) {
       if (pastas.length <= 1) { notificar({ tipo: 'erro', mensagem: 'Não é possível excluir a única pasta que resta.' }); return; }
 
@@ -781,16 +723,12 @@ function criarLoja() {
       if (primeiraListaDaPasta) api.alternarLista(primeiraListaDaPasta.id);
     },
 
-    /**
-     * Entra em uma lista recebida por link compartilhado. Se o
-     * aparelho nunca ouviu falar dela, cria um registro local
-     * provisório (o nome de verdade chega pela sincronização
-     * assim que o Firebase responder).
-     */
+    // entra numa lista recebida por link. se o aparelho não conhece, cria um registro
+    // provisório (o nome real chega pela sincronização)
     entrarEmListaCompartilhada: function (id) {
       if (!listas.some(function (l) { return l.id === id; })) {
         listas = listas.concat([{ id: id, nome: 'Lista compartilhada', pastaId: pastaAtivaId, criadoEm: Date.now() }]);
-        marcarListaSemeada(id); // o conteúdo desta lista vem do servidor: nada local para "semear"
+        marcarListaSemeada(id); // o conteúdo vem do servidor, nada local pra semear
         salvarListas(listas);
         notificar({ tipo: 'listas' });
       }

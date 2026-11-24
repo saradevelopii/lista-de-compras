@@ -1,8 +1,6 @@
-/* =========================================================
-   Armazenamento — única camada que toca o localStorage.
-   Isola o resto do app de erros de quota, modo privado etc.,
-   e concentra a migração de versões antigas do formato salvo.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// único lugar que mexe no localStorage. protege o resto do app de erro de cota, modo privado
+// etc. e guarda as migrações de formato
 
 import { gerarId, normalizarItemBruto } from './modelos.js';
 import { sanearLayout } from './categorias.js';
@@ -19,11 +17,9 @@ var CHAVE_PUBLICACOES_PENDENTES = 'sacola:publicacoes-pendentes';
 function chaveItens(listaId) { return 'sacola:itens:' + listaId; }
 function chaveConfig(listaId) { return 'sacola:config:' + listaId; }
 
-/* ---------- Migração única: versão de lista única -> múltiplas listas ---------- */
-// Quem já usava o app antes desta versão tinha os dados soltos em
-// 'sacola:itens' e 'sacola:config'. Na primeira carga desta versão,
-// criamos "Minha Lista" com esses dados dentro, sem que a pessoa
-// perceba nada mudando.
+// --- migração: lista única para várias listas ---
+// quem já usava tinha tudo solto em sacola:itens e sacola:config; na primeira carga vira a
+// Minha Lista
 
 function migrarParaMultiplasListasSeNecessario() {
   try {
@@ -43,12 +39,8 @@ function migrarParaMultiplasListasSeNecessario() {
 }
 migrarParaMultiplasListasSeNecessario();
 
-/* ---------- Migração única: listas soltas -> organizadas em pastas ---------- */
-// Quem já usava múltiplas listas antes desta versão não tinha o
-// conceito de pasta. Na primeira carga desta versão, criamos uma
-// pasta padrão e colocamos TODAS as listas existentes dentro dela —
-// nada muda visualmente pra quem já usava o app, só ganha a
-// organização por pasta a partir daqui.
+// --- migração: listas soltas para pastas ---
+// antes não existia pasta. na primeira carga cria a pasta padrão e coloca todas as listas nela
 
 function migrarParaPastasSeNecessario() {
   try {
@@ -72,16 +64,15 @@ function migrarParaPastasSeNecessario() {
 }
 migrarParaPastasSeNecessario();
 
-/* ---------- Listas (metadados: id, nome, data de criação) ---------- */
+// --- listas ---
 
 export function carregarListas() {
   try {
     var bruto = localStorage.getItem(CHAVE_LISTAS);
     var dados = bruto ? JSON.parse(bruto) : [];
     if (!Array.isArray(dados)) return [];
-    // defesa: uma lista sem pastaId (dado corrompido ou de uma versão
-    // anterior à migração) cai na primeira pasta existente, em vez de
-    // ficar invisível pra sempre em nenhum carrossel
+    // lista sem pastaId (dado corrompido ou anterior à migração) vai pra primeira pasta, senão
+    // fica invisível
     var pastaPadrao = (function () {
       try {
         var brutoPastas = localStorage.getItem(CHAVE_PASTAS);
@@ -137,7 +128,7 @@ export function excluirDadosDaLista(listaId) {
   }
 }
 
-/* ---------- Pastas (metadados: id, nome, data de criação) ---------- */
+// --- pastas ---
 
 export function carregarPastas() {
   try {
@@ -178,9 +169,8 @@ export function salvarPastaAtivaId(id) {
   }
 }
 
-/* ---------- Itens e config de uma lista específica ---------- */
+// --- itens e config de cada lista ---
 
-/** @param {string} listaId @returns {Item[]} */
 export function carregarItens(listaId) {
   try {
     var bruto = localStorage.getItem(chaveItens(listaId));
@@ -193,7 +183,6 @@ export function carregarItens(listaId) {
   }
 }
 
-/** @param {string} listaId @param {Item[]} itens @returns {boolean} */
 export function salvarItens(listaId, itens) {
   try {
     localStorage.setItem(chaveItens(listaId), JSON.stringify(itens));
@@ -204,11 +193,6 @@ export function salvarItens(listaId, itens) {
   }
 }
 
-/**
- * @param {string} listaId
- * @param {string[]} chavesCategoriasValidas - fixas + personalizadas atuais
- * @returns {{orcamento: number|null, layoutAtual: string[]}}
- */
 export function carregarConfig(listaId, chavesCategoriasValidas) {
   try {
     var bruto = localStorage.getItem(chaveConfig(listaId));
@@ -234,7 +218,7 @@ export function salvarConfig(listaId, config) {
   }
 }
 
-/* ---------- Corredores personalizados (globais — valem para todas as listas) ---------- */
+// --- corredores personalizados (valem pra todas as listas) ---
 
 export function carregarCategoriasPersonalizadas() {
   try {
@@ -257,7 +241,7 @@ export function salvarCategoriasPersonalizadas(categorias) {
   }
 }
 
-/* ---------- Histórico de produtos (para o autocompletar) ---------- */
+// --- histórico (autocompletar) ---
 
 export function carregarHistorico() {
   try {
@@ -280,11 +264,9 @@ export function salvarHistorico(historico) {
   }
 }
 
-/* ---------- Publicações pendentes (offline) ---------- */
-// Ids das listas cuja última alteração ainda não chegou ao Firebase
-// (sem rede, SDK fora do ar...). O dado em si já está salvo nas chaves
-// da lista; aqui só guardamos "falta enviar", para o reenvio acontecer
-// quando a conexão voltar — inclusive depois de fechar e reabrir o app.
+// --- publicações pendentes ---
+// ids das listas com alteração que ainda não chegou no firebase. o dado já está salvo; aqui só
+// fica o falta enviar, pra reenviar depois (mesmo reabrindo o app)
 
 export function carregarPublicacoesPendentes() {
   try {
@@ -306,11 +288,9 @@ export function salvarPublicacoesPendentes(ids) {
   }
 }
 
-/* ---------- Listas "semeadas" no Firebase ---------- */
-// Ids das listas cuja primeira conciliação com o servidor já aconteceu
-// neste aparelho. Antes dela, o conteúdo LOCAL (que pode estar à frente do
-// servidor, se publicações antigas falharam) é mesclado com o remoto e
-// republicado, em vez de ser sobrescrito pelo remoto.
+// --- listas já conciliadas com o firebase ---
+// ids das listas cuja primeira conciliação com o servidor já rolou neste aparelho. antes disso
+// o conteúdo local (que pode estar na frente) é mesclado com o remoto, não sobrescrito
 
 export function carregarListasSemeadas() {
   try {

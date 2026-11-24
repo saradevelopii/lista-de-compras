@@ -1,0 +1,15 @@
+<style>
+  .FaixaDemo { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; height: 28px; display: flex;
+    align-items: center; justify-content: center; gap: 10px; background: #14397a; color: #fff;
+    font: 600 12px/1 system-ui, sans-serif; letter-spacing: .02em; }
+  .FaixaDemo button { background: transparent; border: 1px solid rgba(255,255,255,.6); color: #fff;
+    border-radius: 999px; padding: 3px 10px; font: inherit; cursor: pointer; }
+  body { padding-top: 28px; }
+</style>
+<div class="FaixaDemo">Demo · dados fictícios <button type="button" id="demo-reiniciar">Reiniciar exemplo</button></div>
+<script>
+  document.getElementById('demo-reiniciar').addEventListener('click', function () {
+    try { localStorage.clear(); } catch (e) {}
+    location.reload();
+  });
+</script>

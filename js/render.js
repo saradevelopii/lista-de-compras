@@ -1,12 +1,7 @@
-/* =========================================================
-   Render — componentes reaproveitáveis (fábricas de elemento).
-   Nenhuma função aqui lê ou grava no store; recebem dados e
-   callbacks prontos, e devolvem nós de DOM ou atualizam nós
-   existentes. A lista de categorias (fixas + personalizadas)
-   é sempre recebida por parâmetro, nunca importada fixa —
-   assim um corredor criado pelo usuário aparece em todo lugar
-   imediatamente, sem exceção.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// fábricas de elemento. nada aqui lê ou grava no estado: recebe dados e callbacks e devolve nós
+// do DOM. a lista de categorias sempre vem por parâmetro, assim um corredor criado pelo usuário
+// aparece em todo lugar
 
 import { nomeCategoria } from './categorias.js';
 import { UNIDADES } from './modelos.js';
@@ -16,20 +11,7 @@ import {
 } from './calculo.js';
 import { aplicarMascaraMoeda, definirValorMascarado, valorNumericoMascarado } from './mascara.js';
 
-/**
- * Linha de item da lista — em modo leitura ou em modo edição.
- * @param {Item} item
- * @param {Categoria[]} todasCategorias
- * @param {{
- *   emEdicao: boolean,
- *   aoAlternar: (id: string) => void,
- *   aoExcluir: (id: string, nome: string) => void,
- *   aoIniciarEdicao: (id: string) => void,
- *   aoSalvarEdicao: (id: string, alteracoes: object) => void,
- *   aoCancelarEdicao: (id: string) => void
- * }} acoes
- * @returns {HTMLLIElement}
- */
+// linha de item, em modo leitura ou edição
 export function criarLinhaItem(item, todasCategorias, acoes) {
   var li = document.createElement('li');
   li.className = 'item' + (item.feito ? ' item--feito' : '');
@@ -111,15 +93,8 @@ function criarCampoSelect(rotulo, opcoes, valorSelecionado, formatarOpcao) {
   return select;
 }
 
-/**
- * Seletor de tipo de preço (só faz sentido para g/ml/kg/L):
- * "Preço fechado" (valor digitado = total da embalagem/etiqueta) ou
- * "Preço por kg/L" (proporcional à quantidade). Usado tanto no
- * formulário de adicionar quanto no de editar.
- * @param {string} tipoInicial
- * @param {string} unidadeInicial
- * @param {(tipo: string) => void} [aoMudar]
- */
+// alterna entre preço fechado e preço por kg/L (só aparece para g/ml/kg/L). usado no formulário
+// de adicionar e no de editar
 export function criarSeletorTipoPreco(tipoInicial, unidadeInicial, aoMudar) {
   var el = document.createElement('div');
   el.className = 'seletor-preco';
@@ -265,19 +240,8 @@ function criarFormularioEdicao(item, todasCategorias, aoSalvar, aoCancelar) {
   return form;
 }
 
-/**
- * Constrói o grupo inteiro de um corredor dentro da lista de
- * pendentes: um cabeçalho fixo e, logo abaixo, uma sublista
- * própria daquele corredor — é essa sublista que fica arrastável,
- * o que naturalmente impede um item de "vazar" pra outro corredor
- * só de arrastar (teria que reclassificar a categoria pra isso).
- * @param {string} categoriaChave
- * @param {Item[]} itensDaCategoria
- * @param {Categoria[]} todasCategorias
- * @param {string|null} itemEmEdicaoId - id do item em edição, se houver
- * @param {object} acoesItem - callbacks comuns (aoAlternar, aoExcluir, ...), sem emEdicao/arrastavel
- * @returns {HTMLLIElement}
- */
+// um grupo por corredor: cabeçalho e uma sublista própria. só a sublista é arrastável, então o
+// item não escapa pra outro corredor sem mudar de categoria
 export function criarGrupoDeItens(categoriaChave, itensDaCategoria, todasCategorias, itemEmEdicaoId, acoesItem) {
   var li = document.createElement('li');
   li.className = 'item-grupo-container';
@@ -300,11 +264,7 @@ export function criarGrupoDeItens(categoriaChave, itensDaCategoria, todasCategor
   return li;
 }
 
-/**
- * Atualiza o painel financeiro fixo com total, saldo e alerta.
- * @param {HTMLElement} el
- * @param {{total: number, orcamento: number|null, saldo: number|null, status: string}} dados
- */
+// painel fixo com total, saldo e alerta
 export function renderPainelFinanceiro(el, dados) {
   el.dataset.status = dados.status;
   el.querySelector('[data-total]').textContent = formatarMoeda(dados.total);
@@ -313,7 +273,7 @@ export function renderPainelFinanceiro(el, dados) {
   var linhaSaldo = el.querySelector('[data-linha-saldo]');
   if (dados.saldo == null) {
     linhaSaldo.hidden = true;
-    saldoEl.textContent = ''; // nunca deixa um valor antigo "preso" no DOM, mesmo se o CSS falhar
+    saldoEl.textContent = ''; // não deixa valor antigo preso no DOM, mesmo se o css falhar
   } else {
     linhaSaldo.hidden = false;
     saldoEl.textContent = formatarMoeda(dados.saldo);
@@ -328,26 +288,8 @@ export function renderPainelFinanceiro(el, dados) {
   }
 }
 
-/**
- * Redesenha a lista reordenável de corredores (Ordenação de Corredores).
- * A reordenação em si é ligada externamente (script.js chama
- * tornarOrdenavel no elemento .corredores__lista já montado aqui)
- * — por isso esta função não recebe mais callbacks de mover.
- * @param {HTMLElement} el
- * @param {string[]} layoutAtual
- * @param {Categoria[]} todasCategorias
- */
-/**
- * Redesenha a lista reordenável de corredores (Ordenação de Corredores).
- * Corredores personalizados ganham "Renomear"/"Excluir"; os fixos do
- * sistema (Hortifrúti, Padaria etc.) ficam só com o nome e a alça —
- * são o padrão compartilhado, não "seus" pra editar ou remover.
- * @param {HTMLElement} el
- * @param {string[]} layoutAtual
- * @param {Categoria[]} todasCategorias
- * @param {Set<string>} chavesPersonalizadas
- * @param {{aoRenomear:Function, aoExcluir:Function}} acoes
- */
+// lista de corredores reordenável. a reordenação é ligada no script.js (tornarOrdenavel)
+// só corredor personalizado ganha renomear e excluir; os fixos ficam só com nome e alça
 export function renderPainelCorredores(el, layoutAtual, todasCategorias, chavesPersonalizadas, acoes) {
   el.textContent = '';
 
@@ -398,34 +340,11 @@ export function renderPainelCorredores(el, layoutAtual, todasCategorias, chavesP
   el.appendChild(lista);
 }
 
-/**
- * Lista de listas (tela "Minhas Listas"): cada uma com botão de
- * ativar, renomear e excluir.
- * @param {HTMLElement} el
- * @param {Array<{id:string, nome:string}>} listas
- * @param {string} listaAtivaId
- * @param {{aoAlternar:Function, aoRenomear:Function, aoExcluir:Function}} acoes
- */
-/**
- * Redesenha a barra horizontal deslizante de abas de listas. Cada aba
- * é um <div> (não-interativo) contendo um ou dois <button> IRMÃOS —
- * nunca um botão dentro de outro botão, que é inválido em HTML e
- * quebra de formas imprevisíveis em leitores de tela. A aba ATIVA
- * ganha um segundo botão, "⋮" (opções), pra renomear/excluir.
- * @param {HTMLElement} el
- * @param {Array<{id:string,nome:string}>} listas
- * @param {string} listaAtivaId
- * @param {{aoAlternar:Function, aoAbrirOpcoes:Function, aoCriarNova:Function}} acoes
- */
-/**
- * Redesenha a tela de gerenciamento de pastas: cada pasta é uma
- * linha com botão de ativar (o nome) + Renomear + Excluir — mesmo
- * padrão usado nas listas, um nível acima na hierarquia.
- * @param {HTMLElement} el
- * @param {Array<{id:string,nome:string}>} pastas
- * @param {string} pastaAtivaId
- * @param {{aoAlternar:Function, aoRenomear:Function, aoExcluir:Function}} acoes
- */
+// lista de listas, com ativar, renomear e excluir
+// abas deslizantes de listas. cada aba é um div com um ou dois botões irmãos (botão dentro de
+// botão é html inválido e quebra leitor de tela). a aba ativa ganha um segundo botão, o ⋮, pra
+// renomear e excluir
+// tela de pastas, mesmo padrão das listas um nível acima
 export function renderPainelPastas(el, pastas, pastaAtivaId, acoes) {
   el.textContent = '';
   var ul = document.createElement('ul');
@@ -507,13 +426,7 @@ export function renderAbasDeListas(el, listas, listaAtivaId, acoes) {
   el.appendChild(abaNova);
 }
 
-/**
- * Dropdown de sugestões do autocompletar, posicionado logo
- * abaixo do campo de nome do produto.
- * @param {HTMLElement} el
- * @param {Array<{nome:string, categoriaChave:string, unidade:string}>} sugestoes
- * @param {(sugestao: object) => void} aoEscolher
- */
+// sugestões do autocompletar, logo abaixo do campo de nome
 export function renderSugestoes(el, sugestoes, aoEscolher) {
   el.textContent = '';
   el.hidden = sugestoes.length === 0;
@@ -524,7 +437,7 @@ export function renderSugestoes(el, sugestoes, aoEscolher) {
     botao.type = 'button';
     botao.className = 'sugestoes__item';
     botao.textContent = sugestao.nome;
-    // usa mousedown (dispara antes do blur do campo de texto) para o clique não ser perdido
+    // mousedown dispara antes do blur do campo, senão o clique se perde
     botao.addEventListener('mousedown', function (evento) {
       evento.preventDefault();
       aoEscolher(sugestao);

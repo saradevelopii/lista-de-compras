@@ -1,18 +1,10 @@
-/* =========================================================
-   Máscara monetária — formata em tempo real, dígito a dígito,
-   da direita para a esquerda (padrão de campo de valor em BRL).
-   Não depende de DOM real além de .value/.addEventListener,
-   o que a torna testável fora do navegador.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// máscara de valor em reais: formata dígito a dígito, da direita pra esquerda. só usa value e
+// addEventListener, então dá pra testar sem navegador
 
 import { formatarMoeda } from './calculo.js';
 
-/**
- * Converte uma sequência de dígitos (string) no valor formatado
- * em reais, tratando o último dígito como centavos.
- * @param {string} digitos
- * @returns {string} - '' quando não há dígito nenhum
- */
+// sequência de dígitos vira reais, o último dígito são os centavos
 function formatarDigitos(digitos) {
   var limpos = digitos.replace(/^0+(?=\d)/, '');
   if (!limpos) return '';
@@ -20,11 +12,7 @@ function formatarDigitos(digitos) {
   return formatarMoeda(centavos / 100);
 }
 
-/**
- * Liga a máscara a um campo de texto: a cada entrada do usuário,
- * reconstrói o valor a partir apenas dos dígitos presentes.
- * @param {HTMLInputElement} elemento
- */
+// liga a máscara no campo, refazendo o valor só com os dígitos
 export function aplicarMascaraMoeda(elemento) {
   elemento.addEventListener('input', function () {
     var digitos = elemento.value.replace(/\D/g, '');
@@ -35,12 +23,7 @@ export function aplicarMascaraMoeda(elemento) {
   });
 }
 
-/**
- * Pré-preenche um campo mascarado a partir de um valor em reais
- * (usado ao abrir a edição de um item que já tem preço).
- * @param {HTMLInputElement} elemento
- * @param {number|null} valorReais
- */
+// preenche o campo a partir de um valor em reais (edição de item com preço)
 export function definirValorMascarado(elemento, valorReais) {
   if (valorReais == null || !Number.isFinite(valorReais)) {
     elemento.value = '';
@@ -49,11 +32,7 @@ export function definirValorMascarado(elemento, valorReais) {
   elemento.value = formatarDigitos(String(Math.round(valorReais * 100)));
 }
 
-/**
- * Extrai o valor numérico em reais a partir do texto mascarado.
- * @param {HTMLInputElement} elemento
- * @returns {number|null} - null quando o campo não tem nenhum dígito
- */
+// valor numérico a partir do texto mascarado
 export function valorNumericoMascarado(elemento) {
   var digitos = elemento.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
   if (!digitos) return null;

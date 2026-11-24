@@ -1,31 +1,19 @@
-/* =========================================================
-   Link compartilhável — usa o hash da URL (#lista=ID), não o
-   caminho nem query string, para funcionar em qualquer host
-   estático (GitHub Pages incluso) sem configuração de rotas.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// link de compartilhamento pelo hash da url (#lista=ID), que funciona em qualquer host
+// estático, github pages incluso, sem configurar rota
 
-/**
- * @param {string} listaId
- * @returns {string}
- */
 export function gerarLinkCompartilhavel(listaId) {
   var base = window.location.origin + window.location.pathname;
   return base + '#lista=' + encodeURIComponent(listaId);
 }
 
-/**
- * @returns {string|null} o id da lista presente na URL atual, se houver
- */
 export function obterListaIdDaURL() {
   var hash = window.location.hash || '';
   var casamento = hash.match(/lista=([^&]+)/);
   return casamento ? decodeURIComponent(casamento[1]) : null;
 }
 
-/**
- * Remove o #lista=... da URL depois de já ter sido consumido,
- * para não reprocessar ao navegar dentro do próprio app.
- */
+// tira o #lista=... da url depois de usar, pra não processar de novo
 export function limparListaIdDaURL() {
   if (window.history && window.history.replaceState) {
     window.history.replaceState(null, '', window.location.pathname + window.location.search);

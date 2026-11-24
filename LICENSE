@@ -1,0 +1,54 @@
+Qlista
+Copyright (c) 2026 Sara Ingryd Alves Brito. Todos os direitos reservados.
+
+
+LICENÇA PROPRIETÁRIA (PORTUGUÊS)
+
+Este código-fonte e todos os arquivos deste repositório (código, estilos,
+textos, ícones, testes e documentação) são de propriedade exclusiva da autora.
+Este projeto NÃO é software livre nem de código aberto.
+
+1. O que é permitido
+   Ler o código-fonte e executá-lo localmente, apenas para avaliar o trabalho
+   da autora (por exemplo, em processos seletivos e análises de portfólio).
+
+2. O que NÃO é permitido sem autorização prévia e por escrito da autora
+   - copiar, reproduzir ou publicar o código, no todo ou em parte (inclusive em
+     outros repositórios, sites, cursos ou materiais);
+   - modificar, criar obras derivadas ou usar trechos em outros projetos;
+   - distribuir, sublicenciar, vender, alugar ou usar comercialmente;
+   - remover ou alterar avisos de autoria e de direitos autorais;
+   - apresentar este trabalho, ou parte dele, como sendo de outra pessoa.
+
+3. Componentes de terceiros
+   As bibliotecas listadas em THIRD-PARTY-NOTICES.md mantêm as licenças
+   próprias de seus autores. Esta licença não se aplica a elas.
+
+4. Plataforma
+   Nada aqui limita os direitos que os Termos de Serviço do GitHub concedem a
+   usuários do GitHub para visualizar e fazer fork de repositórios públicos
+   dentro da própria plataforma. Esses direitos não autorizam nenhum outro uso.
+
+5. Sem garantia
+   O software é fornecido "como está", sem garantia de qualquer tipo. A autora
+   não responde por danos decorrentes do uso.
+
+A visualização deste repositório ou da demonstração pública não concede nenhum
+direito de uso.
+
+Proteção legal: Lei nº 9.609/1998 (Lei do Software) e Lei nº 9.610/1998 (Lei de
+Direitos Autorais).
+
+Contato para autorizações: sara.developi@gmail.com
+
+
+PROPRIETARY LICENSE (ENGLISH SUMMARY)
+
+All rights reserved. The source code and every file in this repository are the
+exclusive property of the author and are not open source. Reading the code and
+running it locally to evaluate the author's work (for example during hiring or
+portfolio review) is allowed. Any other use, including copying, modifying,
+redistributing, publishing, sublicensing, selling or reusing any part of it in
+other projects, requires prior written permission. Third-party components keep
+their own licenses (see THIRD-PARTY-NOTICES.md). The software is provided "as
+is", without warranty of any kind. The Portuguese text above prevails.

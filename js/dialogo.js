@@ -1,14 +1,7 @@
-/* =========================================================
-   Diálogo de confirmação — componente reaproveitável.
-   Não sabe nada sobre "item" ou "lista": recebe elementos de
-   DOM já existentes e devolve uma função confirmar(mensagem)
-   que resolve true/false conforme a escolha do usuário.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// diálogo de confirmação reaproveitável: recebe os elementos do DOM e devolve uma função que
+// resolve true ou false
 
-/**
- * @param {{overlay: HTMLElement, mensagem: HTMLElement, botaoCancelar: HTMLElement, botaoConfirmar: HTMLElement}} elementos
- * @returns {(mensagem: string, textoConfirmar?: string) => Promise<boolean>}
- */
 export function criarConfirmador(elementos) {
   var resolver = null;
   var textoConfirmarPadrao = elementos.botaoConfirmar.textContent;
@@ -40,15 +33,8 @@ export function criarConfirmador(elementos) {
   };
 }
 
-/**
- * Substituto estilizado do window.prompt() nativo — o navegador
- * sempre exibe o domínio do site num prompt nativo ("meusite.com
- * diz"), o que não dá pra remover nem estilizar; este componente
- * evita isso por completo, usando um formulário próprio do app.
- *
- * @param {{overlay: HTMLElement, form: HTMLElement, mensagem: HTMLElement, campo: HTMLElement, botaoCancelar: HTMLElement}} elementos
- * @returns {(mensagem: string, valorInicial?: string) => Promise<string|null>} null quando cancelado
- */
+// no lugar do window.prompt, que sempre mostra o domínio do site (tipo meusite.com diz) e não
+// dá pra mudar. aqui é um formulário do próprio app; devolve null se cancelar
 export function criarPrompt(elementos) {
   var resolver = null;
 

@@ -1,0 +1,27 @@
+<script>
+(function () {
+  try {
+    if (localStorage.getItem('sacola:listas')) return;
+    var agora = Date.now();
+    var item = function (i, nome, q, u, cat, preco, tipo, feito) {
+      return { id: 'demo' + i, nome: nome, quantidade: q, unidade: u, categoriaChave: cat,
+        tipoPreco: tipo || 'fechado', precoInput: preco, valorTotalCalculado: 0, feito: !!feito, criadoEm: agora + i };
+    };
+    localStorage.setItem('sacola:pastas', JSON.stringify([{ id: 'pdemo', nome: 'Minhas pastas', criadoEm: agora }]));
+    localStorage.setItem('sacola:pasta-ativa', 'pdemo');
+    localStorage.setItem('sacola:listas', JSON.stringify([{ id: 'ldemo', nome: 'Compras da semana', pastaId: 'pdemo', criadoEm: agora }]));
+    localStorage.setItem('sacola:lista-ativa', 'ldemo');
+    localStorage.setItem('sacola:itens:ldemo', JSON.stringify([
+      item(1, 'Banana', 1.2, 'kg', 'hortifruti', 6.9, 'porKgL'),
+      item(2, 'Tomate', 0.8, 'kg', 'hortifruti', 8.5, 'porKgL', true),
+      item(3, 'Pão francês', 10, 'un', 'padaria', 0.9),
+      item(4, 'Leite integral', 6, 'caixa', 'laticinios', 5.2),
+      item(5, 'Arroz', 5, 'kg', 'mercearia', 28.9, 'fechado'),
+      item(6, 'Café', 2, 'pacote', 'mercearia', 18.5),
+      item(7, 'Detergente', 3, 'un', 'limpeza', 2.9),
+      item(8, 'Água sanitária', 1, 'L', 'limpeza', null)
+    ]));
+    localStorage.setItem('sacola:config:ldemo', JSON.stringify({ orcamento: 300, layoutAtual: [] }));
+  } catch (e) {}
+})();
+</script>

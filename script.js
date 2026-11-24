@@ -1,10 +1,6 @@
-/* =========================================================
-   Qlista — orquestração da aplicação.
-
-   Único arquivo que conhece o DOM e o store ao mesmo tempo.
-   Regra de negócio vive em modelos/categorias/calculo/loja;
-   construção de elementos complexos vive em render.js.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// liga a tela ao estado: único arquivo que conhece o DOM e a loja ao mesmo tempo. regra de
+// negócio fica em modelos, categorias, calculo e loja; elementos mais elaborados em render.js
 
 import { loja } from './js/loja.js';
 import { totalCarrinho, statusOrcamento, saldoRestante, rotuloDoPreco, tipoPrecoEfetivo, TIPO_PRECO } from './js/calculo.js';
@@ -23,9 +19,9 @@ import {
   criarSeletorTipoPreco
 } from './js/render.js';
 import { tornarOrdenavel } from './js/ordenacao.js';
-import { NOME_APP, VERSAO_APP } from './js/identidade.js';
+import { NOME_APP, VERSAO_APP, AUTORIA, ANO_COPYRIGHT, CONTATO_URL } from './js/identidade.js';
 
-/* ---------- Referências de DOM ---------- */
+// --- elementos do DOM ---
 
 var telaListaEl = document.getElementById('tela-lista');
 var telaCorredoresEl = document.getElementById('tela-corredores');
@@ -86,14 +82,14 @@ var toastEl = document.getElementById('toast');
 var toastMensagemEl = document.getElementById('toast-mensagem');
 var toastDesfazerEl = document.getElementById('toast-desfazer');
 
-/* ---------- Estado apenas de UI (não persistido) ---------- */
+// --- estado só da tela (não salva) ---
 
 var itemEmEdicaoId = null;
 var concluidosExpandido = false;
-var telaAtual = 'lista'; // 'lista' | 'corredores' | 'pastas'
+var telaAtual = 'lista'; // lista, corredores ou pastas
 var temporizadorToastErro = null;
 
-/* ---------- Diálogo de confirmação de remoção ---------- */
+// --- confirmação de remoção ---
 
 var confirmarRemocao = criarConfirmador({
   overlay: document.getElementById('dialogo-remover'),
@@ -110,12 +106,12 @@ var perguntarNovoNome = criarPrompt({
   botaoCancelar: document.getElementById('dialogo-prompt-cancelar')
 });
 
-/* ---------- Máscaras de moeda ---------- */
+// --- máscaras de moeda ---
 
 aplicarMascaraMoeda(campoPrecoEl);
 aplicarMascaraMoeda(campoOrcamentoEl);
 
-/* ---------- Ações de item ---------- */
+// --- ações de item ---
 
 var acoesItem = {
   aoAlternar: function (id) { loja.alternarItem(id); },
@@ -129,16 +125,15 @@ var acoesItem = {
   aoIniciarEdicao: function (id) { itemEmEdicaoId = id; desenhar(); },
   aoCancelarEdicao: function () { itemEmEdicaoId = null; desenhar(); },
 
-  // Fecha a edição ANTES de acionar o store: a notificação do store
-  // dispara desenhar() de forma síncrona, então itemEmEdicaoId já
-  // precisa refletir "nenhum item em edição" nesse momento.
+  // fecha a edição antes de chamar a loja: a notificação dela chama desenhar() na hora, e o
+  // itemEmEdicaoId já tem que estar limpo
   aoSalvarEdicao: function (id, alteracoes) {
     itemEmEdicaoId = null;
     loja.editarItem(id, alteracoes);
   }
 };
 
-/* ---------- Renderização ---------- */
+// --- desenho da tela ---
 
 function desenhar() {
   desenharListas();
@@ -150,12 +145,8 @@ function desenhar() {
   if (telaAtual === 'pastas') desenharPainelPastas();
 }
 
-/**
- * Única fonte de verdade de quando o formulário de adicionar produto
- * aparece: só na tela de lista E só quando nenhum item está sendo
- * editado no momento — evita os dois formulários (adicionar + editar)
- * ficarem visíveis ao mesmo tempo, sobrepostos ou empilhados na tela.
- */
+// decide se o formulário de adicionar aparece: só na tela da lista e só sem item em edição, pra
+// não ficar formulário em cima de formulário
 function atualizarVisibilidadeDoFormulario() {
   formularioEl.hidden = telaAtual !== 'lista' || itemEmEdicaoId !== null;
 }
@@ -163,9 +154,8 @@ function atualizarVisibilidadeDoFormulario() {
 function desenharAbasDeListas() {
   var estado = loja.obterEstado();
   renderAbasDeListas(abasListasEl, estado.listasDaPastaAtiva, estado.listaAtivaId, {
-    // Trocar de lista pelo carrossel sempre leva direto pra tela
-    // principal dessa lista — mesmo se a pessoa estiver vendo os
-    // Corredores (ou Pastas) de outra lista no momento do toque.
+    // trocar de lista pelas abas sempre leva pra tela principal dela, mesmo se a pessoa estava
+    // em Corredores ou Pastas
     aoAlternar: function (id) { loja.alternarLista(id); irParaLista(); },
     aoAbrirOpcoes: function (id, nome) { abrirMenuOpcoesLista(id, nome); },
     aoCriarNova: function () {
@@ -202,9 +192,8 @@ function desenharListas() {
   var pendentes = loja.itensPendentesOrdenados();
   var concluidos = loja.itensConcluidos();
 
-  // Agrupa os pendentes (já ordenados por corredor) em blocos
-  // contíguos por categoria — cada bloco vira sua própria sublista
-  // arrastável, sem misturar itens de corredores diferentes.
+  // agrupa os pendentes (já ordenados) em blocos por categoria, cada um com sua sublista
+  // arrastável
   var grupos = [];
   pendentes.forEach(function (item) {
     var ultimoGrupo = grupos[grupos.length - 1];
@@ -222,9 +211,8 @@ function desenharListas() {
   });
   listaEl.appendChild(fragmentoPendentes);
 
-  // Liga a reordenação (SortableJS) em cada sublista de corredor recém-criada.
-  // Handle = a alça: o resto da linha (marcar, editar, excluir) continua
-  // respondendo a clique normal, sem risco de ser interpretado como arraste.
+  // liga o SortableJS em cada sublista nova. só a alça arrasta; o resto da linha (marcar,
+  // editar, excluir) responde ao clique normal
   Array.prototype.forEach.call(listaEl.querySelectorAll('.item-grupo-lista'), function (sublista) {
     tornarOrdenavel(sublista, {
       handle: '.item__alca',
@@ -302,11 +290,8 @@ function desenharPainelCorredores() {
   }
 }
 
-/**
- * Abre o menu de opções (Renomear/Excluir) da lista ativa, acionado
- * pelo "⋮" na aba. "Excluir" fica desabilitado quando só resta uma
- * lista — mesma trava de segurança que existia na tela antiga.
- */
+// menu de renomear e excluir da lista ativa (o ⋮ da aba). excluir fica desabilitado quando só
+// sobra uma lista
 function abrirMenuOpcoesLista(id, nome) {
   menuOpcoesListaTituloEl.textContent = nome;
   opcaoExcluirListaEl.disabled = loja.obterEstado().listas.length <= 1;
@@ -340,7 +325,7 @@ function desenharOpcoesCategoria() {
     opcao.textContent = categoria.nome;
     campoCategoriaEl.appendChild(opcao);
   });
-  // preserva a seleção do usuário quando a categoria continua existindo
+  // mantém a seleção do usuário se a categoria ainda existe
   if (Array.prototype.some.call(campoCategoriaEl.options, function (o) { return o.value === selecaoAnterior; })) {
     campoCategoriaEl.value = selecaoAnterior;
   } else {
@@ -348,7 +333,7 @@ function desenharOpcoesCategoria() {
   }
 }
 
-/* ---------- Toast / Snackbar ---------- */
+// --- toast ---
 
 function mostrarToastUndo() {
   clearTimeout(temporizadorToastErro);
@@ -380,9 +365,9 @@ function mostrarToastInfo(mensagem) {
   temporizadorToastErro = setTimeout(esconderToast, 3000);
 }
 
-/* ---------- Formulário de adição + autocompletar ---------- */
+// --- formulário de adicionar e autocompletar ---
 
-// Tipo de preço (fechado x por kg/L): só aparece para g/ml/kg/L
+// tipo de preço (fechado ou por kg/L): só aparece pra g, ml, kg e L
 var linhaTipoPrecoEl = document.getElementById('linha-tipo-preco');
 var seletorTipoPreco = criarSeletorTipoPreco(TIPO_PRECO.FECHADO, campoUnidadeEl.value, atualizarCampoPrecoDoFormulario);
 seletorTipoPreco.el.id = 'seletor-tipo-preco';
@@ -397,7 +382,6 @@ function atualizarCampoPrecoDoFormulario() {
 }
 campoUnidadeEl.addEventListener('change', atualizarCampoPrecoDoFormulario);
 atualizarCampoPrecoDoFormulario();
-
 
 formularioEl.addEventListener('submit', function (evento) {
   evento.preventDefault();
@@ -436,17 +420,17 @@ campoNomeEl.addEventListener('input', function () {
 });
 
 campoNomeEl.addEventListener('blur', function () {
-  // pequeno atraso: o mousedown da sugestão precisa disparar antes de sumir
+  // pequeno atraso: o mousedown da sugestão precisa disparar antes dela sumir
   setTimeout(function () { sugestoesEl.hidden = true; }, 120);
 });
 
-/* ---------- Orçamento ---------- */
+// --- orçamento ---
 
 campoOrcamentoEl.addEventListener('input', function () {
   loja.definirOrcamento(valorNumericoMascarado(campoOrcamentoEl));
 });
 
-/* ---------- Navegação entre telas ---------- */
+// --- navegação entre telas ---
 
 function irParaLista() {
   telaAtual = 'lista';
@@ -476,11 +460,8 @@ function irParaCorredores() {
   desenharPainelCorredores();
 }
 
-/**
- * Tela de gerenciamento de pastas: fica um nível acima de qualquer
- * lista específica, então esconde tudo que só faz sentido dentro de
- * uma lista aberta (abas de listas, contagem, painel financeiro).
- */
+// tela de pastas fica acima de qualquer lista, então esconde o que só faz sentido dentro de uma
+// lista (abas, contagem, painel financeiro)
 function irParaPastas() {
   telaAtual = 'pastas';
   telaPastasEl.hidden = false;
@@ -511,7 +492,7 @@ formNovaPastaEl.addEventListener('submit', function (evento) {
   if (id) { campoNovaPastaEl.value = ''; irParaLista(); }
 });
 
-/* ---------- Novo corredor personalizado ---------- */
+// --- novo corredor ---
 
 formNovoCorredorEl.addEventListener('submit', function (evento) {
   evento.preventDefault();
@@ -522,7 +503,7 @@ formNovoCorredorEl.addEventListener('submit', function (evento) {
   }
 });
 
-/* ---------- Múltiplas listas (abas deslizantes) ---------- */
+// --- listas (abas) ---
 
 botaoFecharMenuOpcoesListaEl.addEventListener('click', fecharMenuOpcoesLista);
 
@@ -534,7 +515,7 @@ document.addEventListener('keydown', function (evento) {
   if (evento.key === 'Escape' && !menuOpcoesListaEl.hidden) fecharMenuOpcoesLista();
 });
 
-/* ---------- Compartilhar (botão único, com menu de opções) ---------- */
+// --- compartilhar ---
 
 function abrirMenuCompartilhar() { menuCompartilharEl.hidden = false; }
 function fecharMenuCompartilhar() { menuCompartilharEl.hidden = true; }
@@ -558,7 +539,7 @@ opcaoCompartilharTextoEl.addEventListener('click', function () {
 
 opcaoLinkWhatsappEl.addEventListener('click', function () {
   fecharMenuCompartilhar();
-  loja.publicarListaAtiva(); // garante a lista completa no servidor antes de alguém abrir o link
+  loja.publicarListaAtiva(); // manda a lista completa pro servidor antes de alguém abrir o link
   var estado = loja.obterEstado();
   var link = gerarLinkCompartilhavel(estado.listaAtivaId);
   var mensagem = 'Edite comigo a lista "' + estado.nomeListaAtiva + '": ' + link;
@@ -567,7 +548,7 @@ opcaoLinkWhatsappEl.addEventListener('click', function () {
 
 opcaoLinkCopiarEl.addEventListener('click', function () {
   fecharMenuCompartilhar();
-  loja.publicarListaAtiva(); // idem: envia a lista completa agora
+  loja.publicarListaAtiva(); // idem
   var link = gerarLinkCompartilhavel(loja.obterEstado().listaAtivaId);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(link).then(function () {
@@ -580,13 +561,19 @@ opcaoLinkCopiarEl.addEventListener('click', function () {
   }
 });
 
-/* ---------- Identidade do app (nome + versão, de fonte única) ---------- */
+// --- nome e versão do app ---
 
 document.title = NOME_APP + ' — lista de compras';
 document.getElementById('menu-titulo-sobre').textContent = 'Sobre o ' + NOME_APP;
 document.getElementById('menu-versao-app').textContent = VERSAO_APP;
+document.getElementById('menu-direitos').textContent =
+  '© ' + ANO_COPYRIGHT + ' ' + AUTORIA + '. Todos os direitos reservados. Não é permitido copiar, modificar ou redistribuir este aplicativo ou o código dele sem autorização por escrito.';
+if (CONTATO_URL) {
+  document.getElementById('menu-contato-link').href = CONTATO_URL;
+  document.getElementById('menu-contato').hidden = false;
+}
 
-/* ---------- Estado da sincronização (menu "Sobre") ---------- */
+// --- estado da sincronização (menu Sobre) ---
 
 var menuSyncEstadoEl = document.getElementById('menu-sync-estado');
 var menuSyncIdEl = document.getElementById('menu-sync-id');
@@ -609,7 +596,7 @@ function desenharStatusSync() {
 desenharStatusSync();
 menuInstitucionalEl.setAttribute('aria-label', 'Sobre o ' + NOME_APP);
 
-/* ---------- Menu institucional ---------- */
+// --- menu Sobre ---
 
 botaoMenuEl.addEventListener('click', function () { menuInstitucionalEl.hidden = false; });
 botaoFecharMenuEl.addEventListener('click', function () { menuInstitucionalEl.hidden = true; });
@@ -621,7 +608,7 @@ document.addEventListener('keydown', function (evento) {
   if (evento.key === 'Escape' && !menuCompartilharEl.hidden) fecharMenuCompartilhar();
 });
 
-/* ---------- Acordeão de concluídos ---------- */
+// --- acordeão de concluídos ---
 
 botaoAlternarConcluidosEl.addEventListener('click', function () {
   concluidosExpandido = !concluidosExpandido;
@@ -632,20 +619,17 @@ botaoLimparConcluidosEl.addEventListener('click', function () {
   loja.limparConcluidos();
 });
 
-/* ---------- Undo ---------- */
+// --- desfazer ---
 
 toastDesfazerEl.addEventListener('click', function () {
   loja.desfazerLimpeza();
 });
 
-/* ---------- Reage a eventos do store ---------- */
+// --- eventos da loja ---
 
-/**
- * Recarregamento seguro para religar a sincronização (SDK que não carregou).
- * Só acontece se a pessoa não estiver digitando nem editando, e no máximo
- * uma vez a cada 2 minutos (evita laço de recarregamentos sem rede estável).
- * Os dados já estão no localStorage, então nada se perde.
- */
+// recarrega pra religar a sincronização (sdk que não carregou). só se a pessoa não estiver
+// digitando nem editando, e no máximo a cada 2 minutos, pra não entrar em loop sem rede
+// estável. os dados estão no localStorage, nada se perde
 function recarregarParaReligarSincronizacao() {
   if (campoNomeEl.value !== '' || itemEmEdicaoId !== null || document.visibilityState !== 'visible') return;
   try {
@@ -682,14 +666,10 @@ loja.inscrever(function (evento) {
   }
 });
 
-/* ---------- Entrar em lista compartilhada via link ---------- */
+// --- entrar em lista por link ---
 
-/**
- * Entra na lista indicada pelo link (#lista=ID), se houver. Roda ao abrir
- * o app E quando o link é aberto com o app já em execução (hashchange /
- * volta ao foco) — antes só rodava no carregamento, então abrir o link
- * com o PWA já aberto não fazia nada.
- */
+// entra na lista do link (#lista=ID). roda ao abrir e também com o app já aberto (hashchange e
+// volta do bfcache); antes só rodava no carregamento e o link não fazia nada com o PWA aberto
 function processarLinkDaLista() {
   var id = obterListaIdDaURL();
   if (!id) return;
@@ -705,29 +685,23 @@ window.addEventListener('pageshow', function (e) { if (e.persisted) processarLin
 desenharOpcoesCategoria();
 desenhar();
 
-/* ---------- Service Worker + atualização 100% automática ---------- */
+// --- service worker e atualização automática ---
 
 var bannerAtualizacaoEl = document.getElementById('banner-atualizacao');
 
 if ('serviceWorker' in navigator) {
   var recarregandoPorAtualizacao = false;
-  // Captura ANTES do registro: se já havia um Service Worker controlando
-  // esta aba (de uma visita anterior), uma futura troca de controlador é
-  // uma atualização de verdade. Na primeira instalação, não há controlador
-  // nenhum ainda — nesse caso não precisamos recarregar nada.
+  // guarda antes de registrar: se já havia um service worker controlando a aba, uma troca de
+  // controlador depois é atualização de verdade. na primeira instalação não precisa recarregar
   var haviaControladorAntes = !!navigator.serviceWorker.controller;
 
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (registro) {
       console.log('Service Worker registrado:', registro.scope);
 
-      // Checagem imediata (não espera o primeiro tick do intervalo) +
-      // intervalo curto de 15s: cobre tanto quem acabou de abrir o app
-      // logo após um deploy quanto quem deixa a aba aberta por muito
-      // tempo — nos dois casos, a detecção fica na casa de segundos,
-      // não minutos. updateViaCache: 'none' (acima) garante que essa
-      // checagem busca o sw.js de verdade na rede, sem cair numa cópia
-      // velha do cache HTTP do CDN do GitHub Pages.
+      // checa na hora e a cada 15s, cobre quem abriu logo depois de um deploy e quem deixa a
+      // aba aberta. o updateViaCache none faz buscar o sw.js de verdade na rede, sem pegar
+      // cópia velha do cache do github pages
       registro.update();
       setInterval(function () { registro.update(); }, 15000);
 
@@ -739,12 +713,8 @@ if ('serviceWorker' in navigator) {
     });
   });
 
-  // O próprio sw.js já ativa a versão nova sozinho (skipWaiting automático
-  // no install) — aqui só reagimos à troca de controlador, recarregando a
-  // página pra aplicar a atualização de fato. Sem isso, o código novo já
-  // estaria "no comando" nos bastidores, mas a aba continuaria rodando o
-  // JavaScript antigo, já carregado em memória, até um reload de qualquer
-  // natureza acontecer.
+  // o sw.js já ativa a versão nova sozinho (skipWaiting); aqui só recarrega a página na troca
+  // de controlador, senão a aba seguiria rodando o javascript antigo que já estava em memória
   navigator.serviceWorker.addEventListener('controllerchange', function () {
     if (!haviaControladorAntes || recarregandoPorAtualizacao) return;
     recarregandoPorAtualizacao = true;

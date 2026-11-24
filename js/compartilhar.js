@@ -1,20 +1,10 @@
-/* =========================================================
-   Compartilhamento — monta o texto formatado da lista e usa
-   a Web Share API, com cópia para a área de transferência
-   como alternativa quando ela não existe (a maioria dos
-   navegadores de desktop, por exemplo).
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// monta o texto da lista e compartilha com a Web Share API; sem ela, copia pra área de
+// transferência
 
 import { totalItem, formatarMoeda, formatarQuantidadeComUnidade } from './calculo.js';
 import { nomeCategoria } from './categorias.js';
 
-/**
- * @param {string} nomeLista
- * @param {Item[]} pendentes
- * @param {Item[]} concluidos
- * @param {Categoria[]} todasCategorias
- * @returns {string}
- */
 export function formatarTextoLista(nomeLista, pendentes, concluidos, todasCategorias) {
   var linhas = ['🛒 Minha Lista de Compras: ' + nomeLista, ''];
 
@@ -47,14 +37,7 @@ function linhaDoItem(item) {
   return texto;
 }
 
-/**
- * Compartilha o texto via Web Share API; se indisponível (ou se
- * falhar por outro motivo que não o cancelamento do usuário),
- * cai para a cópia na área de transferência.
- * @param {string} texto
- * @param {string} titulo
- * @returns {Promise<'compartilhado'|'copiado'|'falhou'>}
- */
+// tenta compartilhar; se não der (e não foi o usuário cancelando), copia
 export function compartilharTexto(texto, titulo) {
   if (typeof navigator !== 'undefined' && navigator.share) {
     return navigator.share({ title: titulo, text: texto })

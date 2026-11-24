@@ -1,10 +1,14 @@
 <!DOCTYPE html>
+<!-- Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Qlista — lista de compras</title>
   <meta name="description" content="Lista de compras com múltiplas listas, corredores, orçamento e sincronização em tempo real, que funciona sem internet.">
+
+  <meta name="author" content="Sara Brito">
+  <meta name="copyright" content="© 2026 Sara Brito. Todos os direitos reservados.">
 
   <meta name="theme-color" content="#1B4E9B">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -28,7 +32,7 @@
         <button type="button" class="topo__marca" id="botao-pastas" aria-haspopup="true" aria-controls="tela-pastas">
           <span class="topo__marca-texto" id="nome-pasta-ativa">Minhas pastas</span><span class="topo__seta" aria-hidden="true">▾</span>
         </button>
-        <button type="button" class="topo__menu" id="botao-menu" aria-haspopup="dialog" aria-controls="menu-institucional" aria-label="Sobre o app, licença e suporte">⋮</button>
+        <button type="button" class="topo__menu" id="botao-menu" aria-haspopup="dialog" aria-controls="menu-institucional" aria-label="Sobre o app e direitos autorais">⋮</button>
       </div>
 
       <div class="abas-listas" id="abas-listas" role="tablist" aria-label="Suas listas"></div>
@@ -253,16 +257,13 @@
       <p class="dialogo__sync" id="menu-sync-estado">—</p>
       <p class="dialogo__sync dialogo__sync--id">ID desta lista: <code id="menu-sync-id">—</code></p>
 
-      <h3>Licença</h3>
-      <p><a href="https://opensource.org/license/mit/" target="_blank" rel="noopener">Clique aqui para obter sua licença</a></p>
+      <h3>Direitos autorais</h3>
+      <p id="menu-direitos"></p>
 
-      <h3>Suporte</h3>
-      <p>
-        Encontrou um problema ou tem uma sugestão?
-        <a href="mailto:seu-email@exemplo.com">Envie um e-mail</a>
-        ou abra uma issue no
-        <a href="https://github.com/SEU-USUARIO/lista-de-compras" target="_blank" rel="noopener">repositório do projeto</a>.
-      </p>
+      <div id="menu-contato" hidden>
+        <h3>Contato</h3>
+        <p>Dúvidas ou sugestões? <a id="menu-contato-link" href="#" target="_blank" rel="noopener">Fale com a autora</a>.</p>
+      </div>
     </div>
   </div>
 

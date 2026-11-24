@@ -1,10 +1,7 @@
-/* =========================================================
-   Categorias e ordenação por corredor (index_corredor).
-   Suporta corredores fixos (do sistema) e personalizados
-   (criados pelo usuário) combinados em uma única lista.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// categorias e ordem dos corredores. mistura os corredores fixos (do sistema) com os
+// personalizados (do usuário)
 
-/** @type {Categoria[]} */
 export var CATEGORIAS_FIXAS = [
   { chave: 'hortifruti', nome: 'Hortifrúti' },
   { chave: 'padaria', nome: 'Padaria' },
@@ -17,22 +14,13 @@ export var CATEGORIAS_FIXAS = [
   { chave: 'outros', nome: 'Outros' }
 ];
 
-/** Ordem física padrão — derivada da própria lista fixa, sem duplicar dados. */
+// ordem física padrão, tirada da própria lista fixa
 export var ORDEM_PADRAO = CATEGORIAS_FIXAS.map(function (c) { return c.chave; });
 
-/**
- * @param {Categoria[]} personalizadas
- * @returns {Categoria[]} fixas + personalizadas, nessa ordem
- */
 export function combinarCategorias(personalizadas) {
   return CATEGORIAS_FIXAS.concat(Array.isArray(personalizadas) ? personalizadas : []);
 }
 
-/**
- * @param {string} chave
- * @param {Categoria[]} [todasCategorias] - default: só as fixas
- * @returns {string}
- */
 export function nomeCategoria(chave, todasCategorias) {
   var lista = todasCategorias || CATEGORIAS_FIXAS;
   for (var i = 0; i < lista.length; i++) {
@@ -41,14 +29,8 @@ export function nomeCategoria(chave, todasCategorias) {
   return 'Outros';
 }
 
-/**
- * Deriva uma chave estável (sem acento, minúscula, com prefixo
- * "p-" de "personalizada") a partir do nome digitado, garantindo
- * que não colida com nenhuma chave já existente.
- * @param {string} nome
- * @param {string[]} chavesExistentes
- * @returns {string}
- */
+// gera uma chave estável (sem acento, minúscula, prefixo p-) a partir do nome e garante que não
+// repete nenhuma existente
 export function gerarChaveCategoria(nome, chavesExistentes) {
   var base = 'p-' + String(nome)
     .toLowerCase()
@@ -66,14 +48,8 @@ export function gerarChaveCategoria(nome, chavesExistentes) {
   return chave;
 }
 
-/**
- * Ordena itens pela posição de sua categoria na rota de loja atual
- * (index_corredor); dentro da mesma categoria, mantém a ordem de
- * criação. Categoria fora da rota atual vai para o fim.
- * @param {Item[]} itens
- * @param {string[]} ordemChaves
- * @returns {Item[]}
- */
+// ordena pela posição da categoria na rota da loja; na mesma categoria mantém a ordem de
+// criação; categoria fora da rota vai pro fim
 export function ordenarPorCorredor(itens, ordemChaves) {
   var indice = {};
   ordemChaves.forEach(function (chave, i) { indice[chave] = i; });
@@ -86,16 +62,8 @@ export function ordenarPorCorredor(itens, ordemChaves) {
   });
 }
 
-/**
- * Garante que uma ordem de corredores seja uma permutação exata
- * do conjunto de chaves válidas atual (fixas + personalizadas):
- * mantém as que já estavam na ordem salva e acrescenta ao fim
- * qualquer chave válida que ainda não apareça nela (por exemplo,
- * um corredor personalizado recém-criado).
- * @param {string[]} layoutAtual
- * @param {string[]} chavesValidas
- * @returns {string[]}
- */
+// garante que a ordem de corredores tenha exatamente as chaves válidas: mantém as que já
+// estavam e põe no fim as que faltam (ex: corredor recém criado)
 export function sanearLayout(layoutAtual, chavesValidas) {
   var lista = Array.isArray(layoutAtual) ? layoutAtual : [];
   var presentes = lista.filter(function (c) { return chavesValidas.indexOf(c) !== -1; });

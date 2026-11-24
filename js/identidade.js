@@ -1,20 +1,13 @@
-/* =========================================================
-   Identidade do app — nome e versão (SemVer), numa única
-   fonte de verdade. O modal "Sobre" e qualquer outro lugar que
-   precise exibir essa informação leem daqui, em vez de ter o
-   texto duplicado e solto pelo código.
-
-   REGRA: bump a cada mudança publicada, sem exceção — senão o
-   número fica sem sentido (foi exatamente o que aconteceu antes
-   desta atualização: ficou parado em 1.0.10 por várias rodadas
-   de mudanças reais). PATCH (x.x.N) pra correção de bug, MINOR
-   (x.N.0) pra funcionalidade nova, MAJOR (N.0.0) só se algo
-   quebrar compatibilidade de verdade.
-
-   Não confundir com o identificador de cache do sw.js — aquele
-   é técnico/interno e usa outro esquema (qlista-vN); este é a
-   versão SemVer voltada ao usuário.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// nome e versão do app (semver), usados no Sobre. subir a versão a cada mudança publicada:
+// patch pra correção, minor pra funcionalidade nova, major se quebrar compatibilidade. o cache
+// do sw.js tem outro número (qlista-vN)
 
 export var NOME_APP = 'Qlista';
-export var VERSAO_APP = '1.4.4';
+export var VERSAO_APP = '1.4.7';
+
+export var AUTORIA = 'Sara Brito';
+export var ANO_COPYRIGHT = 2026;
+
+// link de contato mostrado no Sobre (ex: seu LinkedIn). vazio = a seção nem aparece
+export var CONTATO_URL = '';

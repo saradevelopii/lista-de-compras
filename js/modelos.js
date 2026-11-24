@@ -1,46 +1,20 @@
-/* =========================================================
-   Camada de domínio: entidades e regras de criação
-   Sem dependências de DOM ou de armazenamento.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// entidades e regras de criação. sem DOM e sem armazenamento
 
 import { calcularValorTotal, tipoPrecoEfetivo, TIPO_PRECO } from './calculo.js';
 
-/**
- * @typedef {Object} Item
- * @property {string} id
- * @property {string} nome
- * @property {number} quantidade        - sempre > 0
- * @property {string} unidade           - uma de UNIDADES
- * @property {string} categoriaChave    - chave de uma Categoria
- * @property {'fechado'|'porKgL'} tipoPreco - como interpretar precoInput (ver calculo.js)
- * @property {number|null} precoInput    - exatamente o valor digitado (reabastece o campo na edição); null = sem preço
- * @property {number} valorTotalCalculado - valor final da linha; alimenta total e saldo
- * @property {boolean} feito
- * @property {number} criadoEm          - epoch ms, usado como desempate de ordenação
- */
-
-/**
- * @typedef {Object} Categoria
- * @property {string} chave
- * @property {string} nome
- */
+// item: id, nome, quantidade (>0), unidade, categoriaChave, tipoPreco (fechado ou porKgL),
+// precoInput (o que foi digitado, null se não tem preço), valorTotalCalculado (o que entra no
+// total e no saldo), feito e criadoEm (também desempata a ordem)
 
 export const UNIDADES = ['un', 'kg', 'g', 'L', 'ml', 'caixa', 'pacote'];
 export const UNIDADE_PADRAO = 'un';
 export const QUANTIDADE_PADRAO = 1;
 
-/**
- * Erro de validação de domínio — nunca deixa a UI travar,
- * apenas sinaliza o que impediu a criação/edição do item.
- */
+// erro de validação do domínio, a tela só mostra a mensagem
 export class ErroValidacao extends Error {}
 
-/**
- * Converte entrada de formulário (sempre string ou undefined)
- * em um número de quantidade válido, com o padrão de 1 caso vazio.
- * @param {unknown} valor
- * @returns {number}
- */
+// quantidade vazia vira 1
 export function normalizarQuantidade(valor) {
   if (valor === '' || valor === undefined || valor === null) return QUANTIDADE_PADRAO;
   var numero = Number(String(valor).replace(',', '.'));
@@ -48,11 +22,7 @@ export function normalizarQuantidade(valor) {
   return numero;
 }
 
-/**
- * Converte entrada de preço (string opcional) em número ou null.
- * @param {unknown} valor
- * @returns {number|null}
- */
+// preço opcional: número ou null
 export function normalizarPreco(valor) {
   if (valor === '' || valor === undefined || valor === null) return null;
   var numero = Number(String(valor).replace(',', '.'));
@@ -64,12 +34,8 @@ export function normalizarUnidade(valor) {
   return UNIDADES.indexOf(valor) !== -1 ? valor : UNIDADE_PADRAO;
 }
 
-/**
- * Monta o item completo a partir de campos já normalizados, sempre
- * recalculando valorTotalCalculado — nenhum caminho de criação/edição/
- * leitura consegue deixar o total dessincronizado do preço digitado.
- * @returns {Item}
- */
+// sempre recalcula o valorTotalCalculado, assim nenhum caminho (criar, editar, ler) deixa o
+// total fora de sincronia com o preço digitado
 function montarItem(base) {
   var tipoPreco = tipoPrecoEfetivo(base.unidade, base.tipoPreco);
   var item = {
@@ -88,12 +54,7 @@ function montarItem(base) {
   return item;
 }
 
-/**
- * Cria um novo Item a partir dos dados brutos de formulário.
- * Lança ErroValidacao se o nome estiver vazio — único campo obrigatório.
- * @param {{nome: unknown, quantidade?: unknown, unidade?: unknown, categoriaChave?: unknown, tipoPreco?: unknown, precoInput?: unknown}} dados
- * @returns {Item}
- */
+// só o nome é obrigatório
 export function criarItem(dados) {
   var nome = String(dados && dados.nome != null ? dados.nome : '').trim();
   if (!nome) {
@@ -113,13 +74,7 @@ export function criarItem(dados) {
   });
 }
 
-/**
- * Aplica alterações parciais a um item existente, mantendo
- * imutabilidade (retorna um novo objeto) e recalculando o valor total.
- * @param {Item} item
- * @param {Partial<{nome: unknown, quantidade: unknown, unidade: unknown, categoriaChave: unknown, tipoPreco: unknown, precoInput: unknown}>} alteracoes
- * @returns {Item}
- */
+// edição parcial, devolve um objeto novo e recalcula o total
 export function aplicarEdicao(item, alteracoes) {
   var nome = alteracoes.nome !== undefined ? String(alteracoes.nome).trim() : item.nome;
   return montarItem({
@@ -135,20 +90,10 @@ export function aplicarEdicao(item, alteracoes) {
   });
 }
 
-/**
- * Reconstrói um Item a partir de QUALQUER formato salvo — localStorage
- * antigo, localStorage atual ou documento do Firebase (nomes em
- * português: comprado, categoriaChave...). Nunca confia no
- * valorTotalCalculado recebido: recalcula, então dado corrompido ou de
- * versão anterior se auto-corrige.
- *
- * Itens legados (só tinham precoUnitario, total = quantidade × preço):
- *  - un/caixa/pacote/kg/L: o mesmo total é reproduzido com os tipos novos;
- *  - g/ml: o total antigo é preservado como "preço fechado" do item, para
- *    nenhum valor mudar de uma versão para outra.
- * @param {any} bruto
- * @returns {Item|null} null se o registro for inutilizável
- */
+// aceita qualquer formato salvo (localStorage antigo ou atual, firebase) e nunca confia no
+// valorTotalCalculado que veio, recalcula. itens antigos só tinham precoUnitario (total =
+// quantidade x preço): em un/caixa/pacote/kg/L o total se reproduz com os tipos novos; em g/ml
+// o total antigo vira preço fechado, pra nenhum valor mudar entre versões
 export function normalizarItemBruto(bruto) {
   if (!bruto || typeof bruto !== 'object' || !bruto.nome) return null;
 
@@ -190,13 +135,8 @@ export function normalizarItemBruto(bruto) {
   });
 }
 
-/**
- * Formato gravado no Firebase (contrato obrigatório do produto), com id,
- * categoriaChave e criadoEm extras para a lista voltar idêntica do outro
- * lado. `categoria` é o nome legível do corredor.
- * @param {Item} item
- * @param {string} nomeDaCategoria
- */
+// formato gravado no firebase. id, categoriaChave e criadoEm vão junto pra lista voltar igual
+// do outro lado; categoria é o nome do corredor
 export function itemParaRemoto(item, nomeDaCategoria) {
   return {
     id: item.id,
@@ -213,14 +153,8 @@ export function itemParaRemoto(item, nomeDaCategoria) {
   };
 }
 
-/**
- * União por id: itens locais primeiro (vencem em caso de conflito) e, depois,
- * os remotos que o aparelho ainda não conhecia. Usada uma única vez por
- * lista, na "semeadura" (ver loja.js), para nunca perder itens de nenhum lado.
- * @param {Item[]} locais
- * @param {Item[]} remotos
- * @returns {Item[]}
- */
+// junta por id: os locais vencem em conflito e entram os remotos que o aparelho não conhecia.
+// usado uma vez por lista (ver loja.js)
 export function mesclarItensPorId(locais, remotos) {
   var vistos = {};
   var resultado = [];

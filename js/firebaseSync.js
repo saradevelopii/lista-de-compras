@@ -1,21 +1,9 @@
-/* =========================================================
-   Sincronização em tempo real via Firebase Realtime Database.
-
-   Módulo isolado e opcional: se js/firebase-config.js ainda
-   tiver os valores de exemplo, nada aqui é executado — o app
-   inteiro continua funcionando só com o localStorage (o
-   "Fallback Local" pedido). O SDK do Firebase só é baixado
-   (via import dinâmico do CDN oficial) se a configuração
-   parecer válida, então quem não configurou nada não paga
-   nenhum custo de rede por isso.
-
-   Estratégia de conflito: "o último a publicar vence", sobre
-   o documento inteiro da lista (itens + config). Não há mesclagem
-   campo a campo — é a abordagem mais simples que cobre bem o caso
-   de uso (poucas pessoas editando a mesma lista de compras),
-   mas é bom saber que dois dispositivos editando ao mesmo
-   milissegundo podem fazer um deles "vencer" por inteiro.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// sincronização em tempo real com o firebase realtime database. módulo opcional: se o firebase-
+// config.js ainda estiver com os valores de exemplo nada aqui roda e o app funciona só com
+// localStorage. o sdk só é baixado se a config parecer válida. conflito: o último a publicar
+// vence, no documento inteiro da lista. serve pra poucas pessoas editando a mesma lista, mas
+// dois aparelhos editando no mesmo instante podem sobrescrever um ao outro
 
 import { FIREBASE_CONFIG } from './firebase-config.js';
 
@@ -24,18 +12,17 @@ var VERSAO_SDK = '10.14.1';
 var appFirebase = null;
 var bancoFirebase = null;
 var carregamentoEmAndamento = null;
-// O navegador guarda o resultado de um import() que falhou: repetir a
-// MESMA URL continua falhando até a página ser recarregada. Por isso, uma
-// falha de carregamento do SDK marca esta flag e o app pede um recarregamento
-// seguro (ver loja.js/script.js) em vez de ficar tentando em vão.
+// o navegador guarda o resultado de um import() que falhou, então repetir a mesma url continua
+// falhando até recarregar a página. por isso a falha marca essa flag e o app pede um
+// recarregamento (ver loja.js e script.js)
 var carregamentoFalhouNestaPagina = false;
 
-/* ---------- Estado da sincronização (para diagnóstico visível no app) ---------- */
+// --- estado da sincronização (aparece no Sobre) ---
 
 var statusSync = {
-  conectado: null,          // true/false conforme o próprio Firebase informa (.info/connected); null = desconhecido
-  ultimaConfirmacao: null,  // epoch ms da última gravação CONFIRMADA pelo servidor
-  ultimoErro: null          // texto do último erro de gravação/assinatura, ou null
+  conectado: null,          // vem do próprio firebase (.info/connected), null = ainda não sei
+  ultimaConfirmacao: null,  // hora da última gravação confirmada pelo servidor
+  ultimoErro: null          // texto do último erro de gravação ou assinatura
 };
 var ouvintesStatus = [];
 
@@ -44,17 +31,14 @@ function atualizarStatus(parcial) {
   ouvintesStatus.forEach(function (fn) { fn(statusSync); });
 }
 
-/** @returns {{conectado: boolean|null, ultimaConfirmacao: number|null, ultimoErro: string|null}} */
 export function obterStatusSync() { return statusSync; }
 
-/** @param {(status: object) => void} fn */
 export function aoMudarStatusSync(fn) { ouvintesStatus.push(fn); }
 
 function descreverErro(erro) {
   return String((erro && (erro.code || erro.message)) || erro || 'erro desconhecido').slice(0, 140);
 }
 
-/** @returns {boolean} true se o SDK não carregou e só um recarregamento resolve */
 export function precisaRecarregar() {
   return carregamentoFalhouNestaPagina;
 }
@@ -67,7 +51,6 @@ function configuracaoValida() {
     /^https:\/\//.test(FIREBASE_CONFIG.databaseURL));
 }
 
-/** @returns {boolean} se a sincronização está configurada e pronta para uso */
 export function disponivel() {
   return configuracaoValida();
 }
@@ -84,7 +67,7 @@ function carregarSdk() {
     var dbMod = modulos[1];
     appFirebase = appMod.initializeApp(FIREBASE_CONFIG);
     bancoFirebase = dbMod.getDatabase(appFirebase);
-    // o próprio Firebase informa se o WebSocket está de pé
+    // o firebase avisa se o websocket está de pé
     dbMod.onValue(dbMod.ref(bancoFirebase, '.info/connected'), function (snap) {
       atualizarStatus({ conectado: snap.val() === true });
     });
@@ -98,16 +81,8 @@ function carregarSdk() {
   return carregamentoEmAndamento;
 }
 
-/**
- * Assina as mudanças remotas de uma lista específica.
- * `aoFalhar` é chamado quando a assinatura não pôde ser criada (SDK
- * indisponível/sem rede) ou foi cancelada pelo servidor — quem chama
- * decide quando tentar de novo (ver ressincronizar em loja.js).
- * @param {string} listaId
- * @param {(dados: object|null) => void} aoReceber
- * @param {(erro: any) => void} [aoFalhar]
- * @returns {Promise<() => void>} função para cancelar a assinatura
- */
+// assina uma lista. aoFalhar roda quando a assinatura não sobe (sem rede, sdk fora) ou o
+// servidor cancela; quem chama decide quando tentar de novo
 export function assinarLista(listaId, aoReceber, aoFalhar) {
   if (!configuracaoValida()) return Promise.resolve(function () {});
 
@@ -128,12 +103,8 @@ export function assinarLista(listaId, aoReceber, aoFalhar) {
   });
 }
 
-/**
- * Força a conexão (WebSocket) a ser refeita. Depois de dias em segundo
- * plano, o navegador pode ter congelado/derrubado o socket sem o SDK
- * perceber de imediato; ciclar offline→online obriga a reconectar e a
- * baixar o valor atual. Sem efeito se o SDK ainda não foi carregado.
- */
+// refaz o websocket. depois de dias em segundo plano o navegador pode ter derrubado o socket
+// sem o sdk perceber; ciclar offline e online força reconectar e baixar o valor atual
 export function reconectar() {
   if (!configuracaoValida() || !bancoFirebase || !carregamentoEmAndamento) return Promise.resolve(false);
   return carregamentoEmAndamento.then(function (dbMod) {
@@ -143,12 +114,7 @@ export function reconectar() {
   }).catch(function () { return false; });
 }
 
-/**
- * Publica o estado completo de uma lista no Firebase.
- * @param {string} listaId
- * @param {object} dados
- * @returns {Promise<boolean>} sucesso
- */
+// publica a lista inteira
 export function publicarLista(listaId, dados) {
   if (!configuracaoValida()) return Promise.resolve(false);
 

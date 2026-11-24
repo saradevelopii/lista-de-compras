@@ -1,10 +1,8 @@
-/* =========================================================
-   Qlista — Service Worker
-   Cache-first: tudo do projeto fica salvo na instalação.
-   Troque a versão abaixo sempre que alterar algum arquivo.
-   ========================================================= */
+/*! Qlista | Copyright (c) 2026 Sara Brito. Todos os direitos reservados. */
+// service worker do qlista. cache-first: guarda tudo na instalação. mudar a versão abaixo
+// sempre que alterar algum arquivo
 
-var VERSAO = 'qlista-v32';
+var VERSAO = 'qlista-v35';
 
 var ARQUIVOS = [
   './',
@@ -33,31 +31,25 @@ var ARQUIVOS = [
   './icons/icon-512-maskable.png'
 ];
 
-// Recursos de CDN externo: cacheados em "melhor esforço". Se o CDN
-// estiver fora do ar ou bloqueado no momento da instalação, isso NÃO
-// pode derrubar o pré-cache dos arquivos próprios — o app inteiro não
-// deveria depender da disponibilidade de um domínio de terceiros.
+// cdn externo é melhor esforço: se estiver fora do ar na instalação, isso não pode derrubar o
+// cache dos arquivos do app
 var ARQUIVOS_EXTERNOS = [
   'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js',
-  // SDK do Firebase (mesma versão de firebaseSync.js): sem isto, abrir o
-  // app sem rede deixava a sincronização morta até o próximo recarregamento
+  // sdk do firebase (mesma versão do firebaseSync.js). sem ele, abrir sem rede deixava a
+  // sincronização morta até recarregar
   'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js',
   'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js'
 ];
 
-// Módulos do SDK que o Firebase importa por dentro (nomes que não
-// conhecemos de antemão) são guardados na primeira vez que carregam.
+// módulos que o sdk importa por dentro (nomes que não dá pra saber antes) são guardados na
+// primeira vez que carregam
 function ehModuloDoFirebase(url) {
   return url.indexOf('https://www.gstatic.com/firebasejs/') === 0;
 }
 
-// Instalação: baixa e guarda todos os arquivos, e já assume o
-// controle sozinho assim que terminar (skipWaiting automático) —
-// a atualização é 100% automática, sem precisar de nenhum clique.
-// A pequena troca: se alguém estiver digitando algo bem na hora
-// em que a nova versão assume, o texto não salvo daquele campo
-// pode se perder no recarregamento — itens já adicionados não são
-// afetados, só o que estava sendo digitado naquele instante.
+// instalação: guarda os arquivos e assume o controle sozinho (skipWaiting), então a atualização
+// é automática. o custo: se alguém estiver digitando na hora que a versão nova assume, o texto
+// do campo se perde no recarregamento; itens já adicionados não
 self.addEventListener('install', function (evento) {
   evento.waitUntil(
     caches.open(VERSAO).then(function (cache) {
@@ -74,7 +66,7 @@ self.addEventListener('install', function (evento) {
   );
 });
 
-// Ativação: apaga caches de versões antigas
+// ativação: apaga caches de versões antigas
 self.addEventListener('activate', function (evento) {
   evento.waitUntil(
     caches.keys().then(function (chaves) {
@@ -89,13 +81,13 @@ self.addEventListener('activate', function (evento) {
   );
 });
 
-// Busca: responde do cache e, se não houver, vai à rede
+// busca: responde do cache e, sem ele, vai pra rede
 self.addEventListener('fetch', function (evento) {
   var requisicao = evento.request;
 
   if (requisicao.method !== 'GET') return;
 
-  // Navegação: sem rede, devolve a página inicial já cacheada
+  // navegação sem rede devolve a página inicial do cache
   if (requisicao.mode === 'navigate') {
     evento.respondWith(
       fetch(requisicao).catch(function () {
@@ -110,7 +102,7 @@ self.addEventListener('fetch', function (evento) {
       if (resposta) return resposta;
 
       return fetch(requisicao).then(function (daRede) {
-        // Guarda cópias novas do mesmo domínio
+        // guarda cópia nova só do mesmo domínio
         var guardavel = daRede && daRede.status === 200 &&
           (daRede.type === 'basic' || (daRede.type === 'cors' && ehModuloDoFirebase(requisicao.url)));
         if (guardavel) {
