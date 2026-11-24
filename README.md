@@ -48,6 +48,10 @@ Gera `dist-demo/` com o app sem Firebase, lista de exemplo, faixa "Demo · dados
 - Versão em `js/identidade.js` e `package.json`, e cache `qlista-vN` em `sw.js`.
 - Demo regenerada e testada.
 
+## Migração do endereço antigo
+
+O app antigo ficava no GitHub Pages. No lugar dele, o repositório público de vitrine serve uma página (`index.html`) que lê o `localStorage` daquele endereço, empacota listas, itens e pastas (gzip e base64url) e redireciona para o endereço novo com `#migrar=...` no hash. O app lê o pacote em `js/migracao.js`, valida tudo, mostra o diálogo "Importar suas listas?" e só grava depois da confirmação, somando ao que já existe. O `sw.js` da vitrine limpa o cache e desregistra o service worker antigo, senão o app antigo continuaria sendo servido do cache.
+
 ## Estrutura
 
 ```
@@ -60,6 +64,7 @@ js/calculo.js           preço, total, saldo e plural das unidades
 js/armazenamento.js     localStorage e migrações de formato
 js/firebaseSync.js      conexão com o Realtime Database
 js/render.js            componentes de interface
+js/migracao.js          importação das listas do endereço antigo
 ```
 
 ## Testes

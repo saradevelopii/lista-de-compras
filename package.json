@@ -1,6 +1,6 @@
 {
   "name": "qlista",
-  "version": "1.4.7",
+  "version": "1.5.0",
   "description": "Qlista — PWA de lista de compras em HTML, CSS e JS puros — sem frameworks.",
   "private": true,
   "type": "module",

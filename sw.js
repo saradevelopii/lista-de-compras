@@ -2,7 +2,7 @@
 // service worker do qlista. cache-first: guarda tudo na instalação. mudar a versão abaixo
 // sempre que alterar algum arquivo
 
-var VERSAO = 'qlista-v35';
+var VERSAO = 'qlista-v36';
 
 var ARQUIVOS = [
   './',

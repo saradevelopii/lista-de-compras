@@ -19,6 +19,7 @@ import {
   criarSeletorTipoPreco
 } from './js/render.js';
 import { tornarOrdenavel } from './js/ordenacao.js';
+import { temPacoteNaURL, lerPacoteDaURL, resumirPacote, aplicarPacote, limparPacoteDaURL } from './js/migracao.js';
 import { NOME_APP, VERSAO_APP, AUTORIA, ANO_COPYRIGHT, CONTATO_URL } from './js/identidade.js';
 
 // --- elementos do DOM ---
@@ -97,6 +98,33 @@ var confirmarRemocao = criarConfirmador({
   botaoCancelar: document.getElementById('dialogo-cancelar'),
   botaoConfirmar: document.getElementById('dialogo-remover-botao')
 });
+
+// --- importação das listas do endereço antigo ---
+
+var confirmarImportacao = criarConfirmador({
+  overlay: document.getElementById('dialogo-migracao'),
+  mensagem: document.getElementById('dialogo-migracao-mensagem'),
+  botaoCancelar: document.getElementById('dialogo-migracao-cancelar'),
+  botaoConfirmar: document.getElementById('dialogo-migracao-confirmar')
+});
+
+if (temPacoteNaURL()) {
+  lerPacoteDaURL().then(function (pacote) {
+    if (!pacote) { limparPacoteDaURL(); return; }
+    var resumo = resumirPacote(pacote);
+    var mensagem = 'Encontramos ' + resumo.listas + (resumo.listas === 1 ? ' lista e ' : ' listas e ') +
+      resumo.itens + (resumo.itens === 1 ? ' item' : ' itens') +
+      ' do endereço antigo. Eles serão adicionados ao que você já tem aqui.';
+    return confirmarImportacao(mensagem, 'Importar').then(function (confirmado) {
+      // o hash só sai depois da resposta: se a página recarregar antes (ex.: refazer a conexão com
+      // o firebase), o diálogo volta em vez de a importação se perder
+      limparPacoteDaURL();
+      if (!confirmado) return;
+      aplicarPacote(pacote);
+      window.location.reload();
+    });
+  });
+}
 
 var perguntarNovoNome = criarPrompt({
   overlay: document.getElementById('dialogo-prompt'),

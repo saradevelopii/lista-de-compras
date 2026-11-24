@@ -4,7 +4,7 @@
 // do sw.js tem outro número (qlista-vN)
 
 export var NOME_APP = 'Qlista';
-export var VERSAO_APP = '1.4.7';
+export var VERSAO_APP = '1.5.0';
 
 export var AUTORIA = 'Sara Brito';
 export var ANO_COPYRIGHT = 2026;

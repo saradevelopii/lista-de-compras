@@ -1079,6 +1079,12 @@ button, input, select {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
+.dialogo__titulo {
+  margin: 0 0 0.6rem;
+  color: var(--azul);
+  font-size: 1.4rem;
+}
+
 .dialogo__mensagem {
   margin: 0 0 1.1rem;
   color: var(--grafite);
